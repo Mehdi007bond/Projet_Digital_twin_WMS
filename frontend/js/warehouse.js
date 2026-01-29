@@ -25,9 +25,9 @@ function createWarehouse(scene) {
     const walls = createWalls(width, depth, height);
     warehouseGroup.add(walls);
 
-    // Create ceiling
-    const ceiling = createCeiling(width, depth, height);
-    warehouseGroup.add(ceiling);
+    // Ceiling removed for better top-down view
+    // const ceiling = createCeiling(width, depth, height);
+    // warehouseGroup.add(ceiling);
 
     // Create support columns
     const columns = createColumns(width, depth, height);

@@ -15,6 +15,11 @@ let loadingManager;
 let simulationSpeed = 1.0;
 let isPaused = false;
 
+// Navigation and Task Management (global for access by agv.js)
+let navigationGrid = null;
+let taskQueueManager = null;
+let navigationGridVisual = null;
+
 // Performance monitoring
 let fps = 0;
 let fpsCounter = 0;
@@ -47,8 +52,17 @@ function init() {
     console.log('🏗️ Creating rack system...');
     racksModel = createRacks(scene);
     
+    // Initialize Navigation Grid
+    console.log('🗺️ Creating navigation grid...');
+    navigationGrid = getNavigationGrid();
+    navigationGridVisual = createNavigationGridVisual(scene, navigationGrid);
+    
     console.log('🤖 Creating AGV fleet...');
     agvs = createAGVs(scene);
+    
+    // Initialize Task Queue Manager
+    console.log('📋 Initializing task queue manager...');
+    taskQueueManager = initializeTaskQueueManager(agvs);
     
     console.log('📊 Placing stock items...');
     stockItems = createStock(scene, racksModel);
@@ -240,6 +254,11 @@ function animate() {
         // Update controls
         controls.update();
 
+        // Update Task Queue Manager - dispatches tasks to available AGVs
+        if (taskQueueManager) {
+            taskQueueManager.update(deltaTime);
+        }
+
         // Update AGVs
         if (agvs && agvs.length > 0) {
             updateAGVs(agvs, deltaTime);
@@ -255,6 +274,9 @@ function animate() {
 
         // Update object count
         updateObjectCount();
+        
+        // Update statistics display
+        updateStatsDisplay();
     }
 
     // Render the scene
@@ -330,6 +352,47 @@ function setSimulationSpeed(speed) {
     console.log(`⚡ Simulation speed: ${simulationSpeed}x`);
 }
 
+/**
+ * Update statistics display
+ */
+function updateStatsDisplay() {
+    if (!taskQueueManager) return;
+    
+    const stats = taskQueueManager.getStats();
+    
+    // Update missions active
+    const missionsElement = document.getElementById('missions-active');
+    if (missionsElement) {
+        missionsElement.textContent = stats.activeTasks || 0;
+    }
+    
+    // Update throughput (tasks per hour approximation)
+    const throughputElement = document.getElementById('throughput');
+    if (throughputElement) {
+        // Calculate based on completed tasks
+        const elapsed = (Date.now() - (taskQueueManager.startTime || Date.now())) / 3600000; // hours
+        const throughput = elapsed > 0.001 ? Math.round(stats.totalTasksCompleted / elapsed) : 0;
+        throughputElement.textContent = throughput;
+    }
+    
+    // Count active AGVs
+    const agvCountElement = document.getElementById('agv-count');
+    if (agvCountElement && agvs) {
+        const activeCount = agvs.filter(a => a.status !== 'charging' && a.status !== 'idle').length;
+        agvCountElement.textContent = `${activeCount}/${agvs.length}`;
+    }
+}
+
+/**
+ * Toggle navigation grid visibility
+ */
+function toggleNavigationGrid() {
+    if (navigationGridVisual) {
+        navigationGridVisual.visible = !navigationGridVisual.visible;
+        console.log(`🗺️ Navigation grid: ${navigationGridVisual.visible ? 'visible' : 'hidden'}`);
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Startup
 // ═══════════════════════════════════════════════════════════════════════════
@@ -345,8 +408,11 @@ if (document.readyState === 'loading') {
 window.digitalTwin = {
     togglePause,
     setSimulationSpeed,
+    toggleNavigationGrid,
     scene,
     camera,
     renderer,
-    controls
+    controls,
+    navigationGrid,
+    taskQueueManager
 };
