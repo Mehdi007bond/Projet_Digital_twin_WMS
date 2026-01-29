@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Twin WMS | 3D Warehouse Visualization</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <h2>Digital Twin WMS</h2>
+            <p class="loader-text">Initializing 3D Environment...</p>
+            <div class="loader-progress">
+                <div class="loader-progress-bar" id="progress-bar"></div>
+            </div>
+            <p class="loader-percentage" id="progress-text">0%</p>
+        </div>
+    </div>
+
+    <!-- Main 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+        <div class="logo">
+            <span class="logo-icon">🏭</span>
+            <div class="logo-text">
+                <h1>Digital Twin</h1>
+                <span>Warehouse Management System</span>
+            </div>
+        </div>
+        <div class="connection-status">
+            <span class="status-dot" id="connection-dot"></span>
+            <span id="connection-text">Connecting...</span>
+        </div>
+        <div class="top-bar-actions">
+            <button class="icon-btn" id="fullscreen-btn" title="Fullscreen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                </svg>
+            </button>
+            <button class="icon-btn" id="settings-btn" title="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Stats Panel (Top Left) -->
+    <div class="panel stats-panel" id="stats-panel">
+        <div class="panel-header">
+            <h3>📊 Live Statistics</h3>
+            <button class="panel-toggle" data-panel="stats-panel">−</button>
+        </div>
+        <div class="panel-content">
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-icon">🤖</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="agv-count">3</span>
+                        <span class="stat-label">AGVs Active</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stock-level">78%</span>
+                        <span class="stat-label">Stock Level</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="missions-active">5</span>
+                        <span class="stat-label">Active Missions</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="throughput">52</span>
+                        <span class="stat-label">Pallets/Hour</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Panel (Top Right) -->
+    <div class="panel control-panel" id="control-panel">
+        <div class="panel-header">
+            <h3>🎮 Controls</h3>
+            <button class="panel-toggle" data-panel="control-panel">−</button>
+        </div>
+        <div class="panel-content">
+            <!-- Simulation Controls -->
+            <div class="control-group">
+                <label>Simulation</label>
+                <div class="btn-group">
+                    <button class="control-btn active" id="play-btn" title="Play">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                    </button>
+                    <button class="control-btn" id="pause-btn" title="Pause">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    </button>
+                    <button class="control-btn" id="reset-btn" title="Reset">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Speed Control -->
+            <div class="control-group">
+                <label>Speed: <span id="speed-value">1.0x</span></label>
+                <input type="range" id="speed-slider" min="0.5" max="4" step="0.5" value="1" class="slider">
+                <div class="slider-labels">
+                    <span>0.5x</span>
+                    <span>4x</span>
+                </div>
+            </div>
+
+            <!-- Camera Views -->
+            <div class="control-group">
+                <label>Camera View</label>
+                <div class="camera-grid">
+                    <button class="camera-btn active" data-view="overview" title="Overview">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span>Overview</span>
+                    </button>
+                    <button class="camera-btn" data-view="front" title="Front View">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                        <span>Front</span>
+                    </button>
+                    <button class="camera-btn" data-view="top" title="Top View">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                        <span>Top</span>
+                    </button>
+                    <button class="camera-btn" data-view="agv" title="Follow AGV">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+                        <span>Follow</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Display Options -->
+            <div class="control-group">
+                <label>Display Options</label>
+                <div class="toggle-list">
+                    <div class="toggle-item">
+                        <span>Show Grid</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="toggle-grid" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-item">
+                        <span>Show Paths</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="toggle-paths" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-item">
+                        <span>Show Labels</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="toggle-labels" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-item">
+                        <span>Shadows</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="toggle-shadows" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Sidebar (Right) -->
+    <div class="panel kpi-sidebar" id="kpi-sidebar">
+        <div class="panel-header">
+            <h3>📈 KPIs</h3>
+            <button class="panel-toggle" data-panel="kpi-sidebar">−</button>
+        </div>
+        <div class="panel-content">
+            <!-- Stock KPIs -->
+            <div class="kpi-section">
+                <h4>📦 Stock</h4>
+                <div class="kpi-item">
+                    <div class="kpi-header">
+                        <span class="kpi-name">Fill Rate</span>
+                        <span class="kpi-value" id="kpi-fill-rate">78%</span>
+                    </div>
+                    <div class="kpi-bar">
+                        <div class="kpi-bar-fill" style="width: 78%; background: linear-gradient(90deg, #2ec4b6, #4361ee);"></div>
+                    </div>
+                </div>
+                <div class="kpi-item">
+                    <div class="kpi-header">
+                        <span class="kpi-name">Accuracy</span>
+                        <span class="kpi-value" id="kpi-accuracy">99.2%</span>
+                    </div>
+                    <div class="kpi-bar">
+                        <div class="kpi-bar-fill" style="width: 99.2%; background: linear-gradient(90deg, #2ec4b6, #20c997);"></div>
+                    </div>
+                </div>
+                <div class="kpi-item">
+                    <div class="kpi-header">
+                        <span class="kpi-name">Rotation</span>
+                        <span class="kpi-value" id="kpi-rotation">12.5</span>
+                    </div>
+                    <div class="kpi-bar">
+                        <div class="kpi-bar-fill" style="width: 62.5%; background: linear-gradient(90deg, #f59f00, #fab005);"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AGV KPIs -->
+            <div class="kpi-section">
+                <h4>🤖 AGV Fleet</h4>
+                <div class="kpi-item">
+                    <div class="kpi-header">
+                        <span class="kpi-name">Utilization</span>
+                        <span class="kpi-value" id="kpi-utilization">85%</span>
+                    </div>
+                    <div class="kpi-bar">
+                        <div class="kpi-bar-fill" style="width: 85%; background: linear-gradient(90deg, #4361ee, #7c3aed);"></div>
+                    </div>
+                </div>
+                <div class="kpi-item">
+                    <div class="kpi-header">
+                        <span class="kpi-name">Missions/Hour</span>
+                        <span class="kpi-value" id="kpi-missions-hour">24</span>
+                    </div>
+                    <div class="kpi-bar">
+                        <div class="kpi-bar-fill" style="width: 80%; background: linear-gradient(90deg, #4361ee, #3b82f6);"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Operations KPIs -->
+            <div class="kpi-section">
+                <h4>⚡ Operations</h4>
+                <div class="kpi-item">
+                    <div class="kpi-header">
+                        <span class="kpi-name">Throughput</span>
+                        <span class="kpi-value" id="kpi-throughput">52/hr</span>
+                    </div>
+                    <div class="kpi-bar">
+                        <div class="kpi-bar-fill" style="width: 72%; background: linear-gradient(90deg, #2ec4b6, #4361ee);"></div>
+                    </div>
+                </div>
+                <div class="kpi-item">
+                    <div class="kpi-header">
+                        <span class="kpi-name">Lead Time</span>
+                        <span class="kpi-value" id="kpi-lead-time">3.2h</span>
+                    </div>
+                    <div class="kpi-bar">
+                        <div class="kpi-bar-fill" style="width: 80%; background: linear-gradient(90deg, #20c997, #2ec4b6);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AGV Info Panel (Bottom) -->
+    <div class="panel agv-panel" id="agv-panel">
+        <div class="panel-header">
+            <h3>🤖 AGV Fleet Status</h3>
+            <button class="panel-toggle" data-panel="agv-panel">−</button>
+        </div>
+        <div class="panel-content">
+            <div class="agv-list">
+                <!-- AGV 1 -->
+                <div class="agv-card" data-agv="AGV-001">
+                    <div class="agv-status-indicator ready"></div>
+                    <div class="agv-info">
+                        <div class="agv-name">AGV-001</div>
+                        <div class="agv-status-text">Ready</div>
+                    </div>
+                    <div class="agv-battery">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="7" width="18" height="10" rx="2"/>
+                            <rect x="20" y="10" width="2" height="4"/>
+                            <rect x="4" y="9" width="12" height="6" fill="#2ec4b6"/>
+                        </svg>
+                        <span>85%</span>
+                    </div>
+                    <div class="agv-location">Zone A2</div>
+                    <div class="agv-missions">
+                        <span class="mission-count">23</span>
+                        <span class="mission-label">missions</span>
+                    </div>
+                </div>
+
+                <!-- AGV 2 -->
+                <div class="agv-card" data-agv="AGV-002">
+                    <div class="agv-status-indicator moving"></div>
+                    <div class="agv-info">
+                        <div class="agv-name">AGV-002</div>
+                        <div class="agv-status-text">Moving</div>
+                    </div>
+                    <div class="agv-battery">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="7" width="18" height="10" rx="2"/>
+                            <rect x="20" y="10" width="2" height="4"/>
+                            <rect x="4" y="9" width="9" height="6" fill="#f59f00"/>
+                        </svg>
+                        <span>62%</span>
+                    </div>
+                    <div class="agv-location">Aisle B</div>
+                    <div class="agv-missions">
+                        <span class="mission-count">18</span>
+                        <span class="mission-label">missions</span>
+                    </div>
+                </div>
+
+                <!-- AGV 3 -->
+                <div class="agv-card" data-agv="AGV-003">
+                    <div class="agv-status-indicator charging"></div>
+                    <div class="agv-info">
+                        <div class="agv-name">AGV-003</div>
+                        <div class="agv-status-text">Charging</div>
+                    </div>
+                    <div class="agv-battery">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="7" width="18" height="10" rx="2"/>
+                            <rect x="20" y="10" width="2" height="4"/>
+                            <rect x="4" y="9" width="6" height="6" fill="#fa5252"/>
+                        </svg>
+                        <span>45%</span>
+                    </div>
+                    <div class="agv-location">Charging</div>
+                    <div class="agv-missions">
+                        <span class="mission-count">15</span>
+                        <span class="mission-label">missions</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Panel -->
+    <div class="alerts-container" id="alerts-container">
+        <!-- Alerts will be dynamically added here -->
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-content"></div>
+    </div>
+
+    <!-- Time & FPS Display -->
+    <div class="info-bar">
+        <div class="info-item">
+            <span class="info-label">Time:</span>
+            <span class="info-value" id="simulation-time">00:00:00</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">FPS:</span>
+            <span class="info-value" id="fps-counter">60</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Objects:</span>
+            <span class="info-value" id="object-count">0</span>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div class="shortcuts-help" id="shortcuts-help">
+        <div class="shortcut"><kbd>Space</kbd> Play/Pause</div>
+        <div class="shortcut"><kbd>1-4</kbd> Camera Views</div>
+        <div class="shortcut"><kbd>F</kbd> Fullscreen</div>
+        <div class="shortcut"><kbd>H</kbd> Toggle UI</div>
+        <div class="shortcut"><kbd>?</kbd> Help</div>
+    </div>
+
+    <!-- Three.js and Custom Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="js/warehouse.js"></script>
+    <script src="js/racks.js"></script>
+    <script src="js/agv.js"></script>
+    <script src="js/stock.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/websocket.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
