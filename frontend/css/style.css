@@ -206,6 +206,12 @@ html, body {
     box-shadow: var(--shadow-lg);
     z-index: 50;
     transition: var(--transition-normal);
+    resize: both;
+    overflow: auto;
+    min-width: 200px;
+    min-height: 100px;
+    max-width: 90vw;
+    max-height: 80vh;
 }
 
 .panel.collapsed .panel-content { display: none; }
@@ -216,6 +222,31 @@ html, body {
     justify-content: space-between;
     padding: 12px 16px;
     border-bottom: 1px solid var(--border-light);
+    cursor: move;
+    user-select: none;
+}
+
+/* Resize handle styling */
+.panel::-webkit-resizer {
+    background: linear-gradient(135deg, transparent 50%, var(--primary) 50%);
+    border-radius: 0 0 var(--radius-lg) 0;
+}
+
+.panel-resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    cursor: se-resize;
+    background: linear-gradient(135deg, transparent 50%, var(--primary) 50%);
+    border-radius: 0 0 var(--radius-lg) 0;
+    opacity: 0.7;
+    transition: opacity var(--transition-fast);
+}
+
+.panel-resize-handle:hover {
+    opacity: 1;
 }
 
 .panel-header h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
@@ -238,7 +269,7 @@ html, body {
 
 .panel-content { padding: 16px; }
 
-.stats-panel { top: 80px; left: 20px; width: 280px; }
+.stats-panel { top: 80px; left: 20px; width: 280px; height: auto; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 
@@ -270,7 +301,7 @@ html, body {
     letter-spacing: 0.5px;
 }
 
-.control-panel { top: 80px; right: 20px; width: 280px; }
+.control-panel { top: 80px; right: 20px; width: 280px; height: auto; }
 .control-group { margin-bottom: 16px; }
 .control-group:last-child { margin-bottom: 0; }
 

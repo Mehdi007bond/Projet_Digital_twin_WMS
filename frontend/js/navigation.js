@@ -79,6 +79,7 @@ class NavigationGrid {
         this.storageNodes = [];     // Storage locations
         this.receptionNodes = [];   // Reception area nodes
         this.shippingNodes = [];    // Shipping dock nodes
+        this.redZoneNodes = [];     // Red Zone nodes (outbound)
         this.chargingNodes = [];    // Charging station nodes
         
         this.initializeGrid();
@@ -122,7 +123,8 @@ class NavigationGrid {
 
         // Create shipping dock nodes (outbound)
         this.createShippingNodes();
-
+        // Create RED ZONE nodes (shipping area with red indicator)
+        this.createRedZoneNodes();
         // Create charging station nodes
         this.createChargingNodes();
 
@@ -130,11 +132,13 @@ class NavigationGrid {
         console.log(`  - Storage: ${this.storageNodes.length}`);
         console.log(`  - Reception: ${this.receptionNodes.length}`);
         console.log(`  - Shipping: ${this.shippingNodes.length}`);
+        console.log(`  - Red Zone: ${this.redZoneNodes.length}`);
         console.log(`  - Charging: ${this.chargingNodes.length}`);
     }
 
     /**
      * Connect neighboring nodes for pathfinding
+     * ONLY horizontal and vertical connections (no diagonals)
      */
     connectNodes() {
         const nodeArray = Array.from(this.nodes.values());
@@ -143,11 +147,14 @@ class NavigationGrid {
             nodeArray.forEach(other => {
                 if (node.id !== other.id) {
                     const dist = node.distanceTo(other);
-                    // Connect nodes that are within one grid step
+                    // Connect nodes that are within one grid step AND aligned
                     if (dist <= 5.1 && dist > 0) {
-                        // Check if they share an aisle (same X or same Z)
-                        if (Math.abs(node.x - other.x) < 0.1 || 
-                            Math.abs(node.z - other.z) < 0.1) {
+                        // ONLY connect if they are EXACTLY on the same line (X or Z)
+                        const onSameX = Math.abs(node.x - other.x) < 0.1;
+                        const onSameZ = Math.abs(node.z - other.z) < 0.1;
+                        
+                        // Must be on same X OR same Z (not both, and not diagonal)
+                        if ((onSameX && !onSameZ) || (!onSameX && onSameZ)) {
                             node.neighbors.push(other.id);
                         }
                     }
@@ -270,6 +277,41 @@ class NavigationGrid {
 
             this.nodes.set(nodeId, node);
             this.shippingNodes.push(node);
+        });
+    }
+
+
+    /**
+     * Create RED ZONE nodes (outbound shipping area)
+     */
+    createRedZoneNodes() {
+        // Red Zone on the far right - bright RED visible area
+        const redZonePositions = [
+            { x: 24, z: -10 },
+            { x: 24, z: -5 },
+            { x: 24, z: 0 },
+            { x: 24, z: 5 },
+            { x: 24, z: 10 }
+        ];
+
+        redZonePositions.forEach((pos, index) => {
+            const nodeId = `red_zone_${index}`;
+            const node = new NavigationNode(
+                nodeId,
+                pos.x, pos.z,
+                NODE_TYPE.SHIPPING  // Use SHIPPING type for red zone
+            );
+            node.isRedZone = true;  // Mark as red zone
+
+            // Connect to nearest path node
+            const nearestPath = this.findNearestPathNode(pos.x, pos.z);
+            if (nearestPath) {
+                node.neighbors.push(nearestPath.id);
+                nearestPath.neighbors.push(nodeId);
+            }
+
+            this.nodes.set(nodeId, node);
+            this.redZoneNodes.push(node);
         });
     }
 
@@ -458,6 +500,20 @@ class NavigationGrid {
     }
 
     /**
+     * Find available shipping node
+     */
+    findAvailableShippingNode() {
+        return this.shippingNodes.find(node => node.isAvailable()) || null;
+    }
+
+    /**
+     * Find available RED ZONE node
+     */
+    findAvailableRedZoneNode() {
+        return this.redZoneNodes.find(node => node.isAvailable()) || null;
+    }
+
+    /**
      * Find available charging node
      */
     findAvailableChargingNode() {
@@ -474,7 +530,7 @@ class NavigationGrid {
     /**
      * Convert path of node IDs to coordinates
      */
-    pathToCoordinates(pathNodeIds, y = 0.15) {
+    pathToCoordinates(pathNodeIds, y = 0.3) {  // Height increased from 0.15 to 0.3
         return pathNodeIds.map(nodeId => {
             const node = this.nodes.get(nodeId);
             return node ? new THREE.Vector3(node.x, y, node.z) : null;

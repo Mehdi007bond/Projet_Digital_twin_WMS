@@ -56,6 +56,9 @@ function init() {
     console.log('🗺️ Creating navigation grid...');
     navigationGrid = getNavigationGrid();
     navigationGridVisual = createNavigationGridVisual(scene, navigationGrid);
+    if (navigationGridVisual) {
+        navigationGridVisual.visible = false;
+    }
     
     console.log('🤖 Creating AGV fleet...');
     agvs = createAGVs(scene);
@@ -66,6 +69,9 @@ function init() {
     
     console.log('📊 Placing stock items...');
     stockItems = createStock(scene, racksModel);
+
+    // Publish globals for UI controls & websocket
+    publishGlobals();
 
     // Initialize UI controls
     console.log('🎮 Setting up controls...');
@@ -87,6 +93,20 @@ function init() {
     // Start animation loop
     console.log('✅ Initialization complete!');
     animate();
+
+    // Demo: Start pick-and-ship missions
+    setTimeout(() => {
+        if (agvs && agvs.length > 0 && stockItems && stockItems.length > 0) {
+            const agv = agvs[1];
+            const box = stockItems[0];
+            const dropZone = new THREE.Vector3(45, 0, 15);
+            
+            if (agv && box && taskQueueManager) {
+                console.log('🎬 Starting demo pick-and-ship mission...');
+                taskQueueManager.assignPickAndShipMission(agv, box, dropZone);
+            }
+        }
+    }, 2000);
 }
 
 /**
@@ -393,6 +413,25 @@ function toggleNavigationGrid() {
     }
 }
 
+function publishGlobals() {
+    window.digitalTwin = {
+        togglePause,
+        setSimulationSpeed,
+        toggleNavigationGrid,
+        scene,
+        camera,
+        renderer,
+        controls,
+        agvs,
+        stockItems,
+        racksModel,
+        warehouseModel,
+        navigationGrid,
+        navigationGridVisual,
+        taskQueueManager
+    };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Startup
 // ═══════════════════════════════════════════════════════════════════════════
@@ -404,15 +443,5 @@ if (document.readyState === 'loading') {
     init();
 }
 
-// Export functions for use in other modules
-window.digitalTwin = {
-    togglePause,
-    setSimulationSpeed,
-    toggleNavigationGrid,
-    scene,
-    camera,
-    renderer,
-    controls,
-    navigationGrid,
-    taskQueueManager
-};
+// Export functions for use in other modules (initial placeholder)
+publishGlobals();

@@ -132,6 +132,27 @@ function createStock(scene, rackSystem) {
         stockItem.model.position.copy(location.position);
         scene.add(stockItem.model);
 
+        // Link stock item to nearest navigation storage node
+        const navGrid = typeof getNavigationGrid === 'function' ? getNavigationGrid() : null;
+        if (navGrid && navGrid.storageNodes && navGrid.storageNodes.length > 0) {
+            let nearestNode = null;
+            let minDist = Infinity;
+            navGrid.storageNodes.forEach(node => {
+                const dx = node.x - location.position.x;
+                const dz = node.z - location.position.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearestNode = node;
+                }
+            });
+
+            if (nearestNode) {
+                nearestNode.itemId = stockItem.id;
+                nearestNode.stockItem = stockItem;
+            }
+        }
+
         // Mark location as occupied
         location.occupied = true;
         location.stock = stockItem;

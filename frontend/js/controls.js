@@ -265,12 +265,8 @@ function setupDisplayToggles() {
  */
 function toggleGrid(show) {
     console.log(`Grid: ${show ? 'ON' : 'OFF'}`);
-    // Grid would be implemented in warehouse.js
-    if (window.digitalTwin && window.digitalTwin.scene) {
-        const grid = window.digitalTwin.scene.getObjectByName('Grid');
-        if (grid) {
-            grid.visible = show;
-        }
+    if (window.digitalTwin && window.digitalTwin.navigationGridVisual) {
+        window.digitalTwin.navigationGridVisual.visible = show;
     }
 }
 
@@ -279,12 +275,8 @@ function toggleGrid(show) {
  */
 function togglePaths(show) {
     console.log(`Paths: ${show ? 'ON' : 'OFF'}`);
-    // Path lines would be shown/hidden
-    if (window.digitalTwin && window.digitalTwin.scene) {
-        const paths = window.digitalTwin.scene.getObjectByName('Paths');
-        if (paths) {
-            paths.visible = show;
-        }
+    if (window.digitalTwin && window.digitalTwin.navigationGridVisual) {
+        window.digitalTwin.navigationGridVisual.visible = show;
     }
 }
 

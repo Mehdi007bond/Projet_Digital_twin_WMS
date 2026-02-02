@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Twin WMS | 3D Warehouse Visualization</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style-light.css">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -63,32 +60,73 @@
         <div class="panel-content">
             <div class="stat-grid">
                 <div class="stat-item">
-                    <div class="stat-icon">🤖</div>
+                    <span class="stat-icon">🤖</span>
                     <div class="stat-info">
                         <span class="stat-value" id="agv-count">3</span>
-                        <span class="stat-label">AGVs Active</span>
+                        <span class="stat-label">AGVs</span>
                     </div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-icon">📦</div>
+                    <span class="stat-icon">📦</span>
                     <div class="stat-info">
                         <span class="stat-value" id="stock-level">78%</span>
-                        <span class="stat-label">Stock Level</span>
+                        <span class="stat-label">Stock</span>
                     </div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-icon">🎯</div>
+                    <span class="stat-icon">🎯</span>
                     <div class="stat-info">
                         <span class="stat-value" id="missions-active">5</span>
-                        <span class="stat-label">Active Missions</span>
+                        <span class="stat-label">Missions</span>
                     </div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-icon">⚡</div>
+                    <span class="stat-icon">⚡</span>
                     <div class="stat-info">
                         <span class="stat-value" id="throughput">52</span>
-                        <span class="stat-label">Pallets/Hour</span>
+                        <span class="stat-label">P/Hour</span>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Panel (Below Stats) -->
+    <div class="panel stock-panel" id="stock-panel">
+        <div class="panel-header">
+            <h3>📦 Stock & Products</h3>
+            <button class="panel-toggle" data-panel="stock-panel">−</button>
+        </div>
+        <div class="panel-content">
+            <div class="stock-summary">
+                <div class="stock-bar">
+                    <div class="stock-bar-fill" id="stock-bar-fill" style="width: 78%"></div>
+                </div>
+                <div class="stock-info">
+                    <span id="stock-occupied">156</span>/<span id="stock-total">200</span> slots
+                </div>
+            </div>
+            <div id="moving-items" class="moving-items-list"></div>
+            <div class="product-list" id="product-list">
+                <div class="product-item">
+                    <span class="product-color" style="background:#4361ee"></span>
+                    <span class="product-name">Type A</span>
+                    <span class="product-qty">45</span>
+                </div>
+                <div class="product-item">
+                    <span class="product-color" style="background:#2ec4b6"></span>
+                    <span class="product-name">Type B</span>
+                    <span class="product-qty">38</span>
+                </div>
+                <div class="product-item">
+                    <span class="product-color" style="background:#f59f00"></span>
+                    <span class="product-name">Type C</span>
+                    <span class="product-qty">52</span>
+                </div>
+                <div class="product-item">
+                    <span class="product-color" style="background:#fa5252"></span>
+                    <span class="product-name">Type D</span>
+                    <span class="product-qty">21</span>
                 </div>
             </div>
         </div>
@@ -398,6 +436,8 @@
     <script src="js/stock.js"></script>
     <script src="js/controls.js"></script>
     <script src="js/websocket.js"></script>
+    <script src="js/widgetManager.js"></script>
+    <script src="js/stockTracker.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

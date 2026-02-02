@@ -161,28 +161,39 @@ class TaskQueueManager {
     }
 
     /**
-     * Create an outbound task (Storage → Shipping)
+     * Create an outbound task (Storage → Red Zone/Shipping)
      */
     createOutboundTask() {
         const storageNode = this.navGrid.findOccupiedStorageSlot();
-        const shippingNode = this.navGrid.findAvailableShippingNode();
+        const redZoneNode = this.navGrid.findAvailableRedZoneNode();
 
         if (!storageNode) {
             console.warn('No items in storage to ship');
             return null;
         }
-        if (!shippingNode) {
-            console.warn('No available shipping nodes');
+        if (!redZoneNode) {
+            console.warn('No available red zone nodes');
             return null;
         }
 
         const task = this.createTask(
             TASK_TYPE.OUTBOUND,
             storageNode.id,
-            shippingNode.id,
+            redZoneNode.id,
             storageNode.itemId,
             TASK_PRIORITY.NORMAL
         );
+
+        // Emit event for stock update
+        if (window.stockUpdateCallback) {
+            window.stockUpdateCallback({
+                itemId: storageNode.itemId,
+                status: 'moving',
+                from: 'storage',
+                to: 'red_zone',
+                agvId: null // Will be set when assigned
+            });
+        }
 
         this.stats.outboundCount++;
         return task;
@@ -349,6 +360,65 @@ class TaskQueueManager {
         const task = this.activeTasks.get(taskId);
         if (task) {
             task.fail();
+        }
+    }
+
+    /**
+     * Pick and ship mission with promises (async)
+     */
+    async assignPickAndShipMission(agv, boxMesh, dropZoneVector) {
+        if (!agv.isAvailable()) {
+            console.warn(`AGV ${agv.id} is not available`);
+            return false;
+        }
+
+        try {
+            console.log(`📦 Task started for ${agv.id}: Pick from ${boxMesh.position.x.toFixed(1)}, ${boxMesh.position.z.toFixed(1)}`);
+            
+            // Step 1: Move to box
+            console.log(`  → Moving to box...`);
+            await agv.moveTo(boxMesh.position);
+            
+            // Step 2: Rotate to face box
+            console.log(`  → Rotating to face box...`);
+            await agv.rotateToFace(boxMesh);
+            
+            // Step 3: Loading animation
+            console.log(`  → Loading cargo...`);
+            await agv.animateLoading();
+            
+            // Step 4: Attach cargo
+            console.log(`  → Attaching cargo...`);
+            agv.attachCargo(boxMesh);
+            
+            // Step 5: Move to drop zone
+            console.log(`  → Moving to drop zone (${dropZoneVector.x.toFixed(1)}, ${dropZoneVector.z.toFixed(1)})...`);
+            await agv.moveTo(dropZoneVector);
+            
+            // Step 6: Rotate at drop zone
+            const tempDropObj = { position: dropZoneVector };
+            console.log(`  → Rotating at drop zone...`);
+            await agv.rotateToFace(tempDropObj);
+            
+            // Step 7: Unloading animation
+            console.log(`  → Unloading cargo...`);
+            await agv.animateUnloading();
+            
+            // Step 8: Detach cargo
+            console.log(`  → Detaching cargo...`);
+            agv.detachCargo(this.navGrid ? this.navGrid.scene : null);
+            
+            // Step 9: Return to IDLE
+            console.log(`  → Returning to IDLE...`);
+            await agv.returnToIdle();
+            
+            console.log(`✅ Task completed for ${agv.id}`);
+            return true;
+
+        } catch (error) {
+            console.error(`❌ Task failed for ${agv.id}:`, error);
+            agv.state = 'IDLE';
+            return false;
         }
     }
 }
