@@ -428,3 +428,215 @@ function getStockStatistics(stockItems) {
         avgFillLevel: Math.round(avgFillLevel)
     };
 }
+
+/**
+ * Perform stock verification - analyze stock levels and generate report
+ */
+function performStockVerification(stockItems) {
+    const verification = {
+        timestamp: new Date().toISOString(),
+        totalItems: stockItems.length,
+        occupied: 0,
+        empty: 0,
+        lowStock: [],
+        fullStock: [],
+        byCategory: { A: 0, B: 0, C: 0 },
+        byFillLevel: { critical: 0, low: 0, medium: 0, high: 0, full: 0 }
+    };
+
+    stockItems.forEach(item => {
+        // Count occupied/empty
+        if (item.fillLevel > 0) {
+            verification.occupied++;
+        } else {
+            verification.empty++;
+        }
+
+        // Category counts
+        verification.byCategory[item.category]++;
+
+        // Fill level analysis
+        if (item.fillLevel === 0) {
+            verification.byFillLevel.critical++;
+        } else if (item.fillLevel <= 25) {
+            verification.byFillLevel.low++;
+            verification.lowStock.push({
+                id: item.id,
+                location: item.location.id,
+                fillLevel: item.fillLevel,
+                category: item.category
+            });
+        } else if (item.fillLevel <= 50) {
+            verification.byFillLevel.medium++;
+        } else if (item.fillLevel < 90) {
+            verification.byFillLevel.high++;
+        } else {
+            verification.byFillLevel.full++;
+            verification.fullStock.push({
+                id: item.id,
+                location: item.location.id,
+                fillLevel: item.fillLevel,
+                category: item.category
+            });
+        }
+    });
+
+    verification.fillRate = ((verification.occupied / verification.totalItems) * 100).toFixed(1);
+    verification.alerts = generateStockAlerts(verification);
+
+    console.log('📋 Stock Verification Report:', verification);
+    return verification;
+}
+
+/**
+ * Generate alerts based on stock verification
+ */
+function generateStockAlerts(verification) {
+    const alerts = [];
+
+    // Critical: Too many empty locations
+    if (verification.empty > verification.totalItems * 0.5) {
+        alerts.push({
+            level: 'warning',
+            message: `Low occupancy: ${verification.empty} empty locations (${((verification.empty / verification.totalItems) * 100).toFixed(1)}%)`
+        });
+    }
+
+    // Low stock items
+    if (verification.lowStock.length > 0) {
+        alerts.push({
+            level: 'warning',
+            message: `${verification.lowStock.length} items with low stock (<25%)`
+        });
+    }
+
+    // Overstocked
+    if (verification.fullStock.length > verification.totalItems * 0.7) {
+        alerts.push({
+            level: 'info',
+            message: `High stock levels: ${verification.fullStock.length} items near capacity`
+        });
+    }
+
+    // Critical empty
+    if (verification.byFillLevel.critical > verification.totalItems * 0.3) {
+        alerts.push({
+            level: 'critical',
+            message: `${verification.byFillLevel.critical} empty locations need restocking`
+        });
+    }
+
+    return alerts;
+}
+
+/**
+ * Display stock verification results in console
+ */
+function displayStockVerificationReport(verification) {
+    console.log('\n' + '='.repeat(60));
+    console.log('📦 STOCK VERIFICATION REPORT');
+    console.log('='.repeat(60));
+    console.log(`Timestamp: ${new Date(verification.timestamp).toLocaleString()}`);
+    console.log(`\nOccupancy:`);
+    console.log(`  Total Locations: ${verification.totalItems}`);
+    console.log(`  Occupied: ${verification.occupied} (${verification.fillRate}%)`);
+    console.log(`  Empty: ${verification.empty} (${((verification.empty / verification.totalItems) * 100).toFixed(1)}%)`);
+    
+    console.log(`\nBy Category (ABC Analysis):`);
+    console.log(`  Category A: ${verification.byCategory.A} items`);
+    console.log(`  Category B: ${verification.byCategory.B} items`);
+    console.log(`  Category C: ${verification.byCategory.C} items`);
+    
+    console.log(`\nBy Fill Level:`);
+    console.log(`  Critical (0%): ${verification.byFillLevel.critical}`);
+    console.log(`  Low (1-25%): ${verification.byFillLevel.low}`);
+    console.log(`  Medium (26-50%): ${verification.byFillLevel.medium}`);
+    console.log(`  High (51-89%): ${verification.byFillLevel.high}`);
+    console.log(`  Full (90-100%): ${verification.byFillLevel.full}`);
+    
+    if (verification.alerts.length > 0) {
+        console.log(`\n⚠️  Alerts (${verification.alerts.length}):`);
+        verification.alerts.forEach((alert, i) => {
+            const icon = alert.level === 'critical' ? '🔴' : alert.level === 'warning' ? '⚠️' : 'ℹ️';
+            console.log(`  ${icon} ${alert.message}`);
+        });
+    } else {
+        console.log(`\n✅ No alerts - Stock levels are optimal`);
+    }
+    
+    if (verification.lowStock.length > 0 && verification.lowStock.length <= 10) {
+        console.log(`\n📋 Low Stock Items:`);
+        verification.lowStock.forEach(item => {
+            console.log(`  - ${item.id} (${item.location}): ${item.fillLevel}% [${item.category}]`);
+        });
+    }
+    
+    console.log('='.repeat(60) + '\n');
+    
+    return verification;
+}
+
+/**
+ * Highlight stock items by filter criteria
+ */
+function highlightStockByFilter(stockItems, filter) {
+    stockItems.forEach(item => {
+        let shouldHighlight = false;
+        
+        switch (filter) {
+            case 'low':
+                shouldHighlight = item.fillLevel > 0 && item.fillLevel <= 25;
+                break;
+            case 'empty':
+                shouldHighlight = item.fillLevel === 0;
+                break;
+            case 'full':
+                shouldHighlight = item.fillLevel >= 90;
+                break;
+            case 'categoryA':
+                shouldHighlight = item.category === 'A';
+                break;
+            case 'categoryB':
+                shouldHighlight = item.category === 'B';
+                break;
+            case 'categoryC':
+                shouldHighlight = item.category === 'C';
+                break;
+            default:
+                shouldHighlight = false;
+        }
+        
+        if (item.model && shouldHighlight) {
+            // Add highlight effect
+            if (!item.highlightMesh) {
+                const highlightGeometry = new THREE.BoxGeometry(1.3, 1.3, 1.3);
+                const highlightMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xffff00,
+                    transparent: true,
+                    opacity: 0.3,
+                    wireframe: true
+                });
+                item.highlightMesh = new THREE.Mesh(highlightGeometry, highlightMaterial);
+                item.highlightMesh.position.copy(item.model.position);
+                item.model.parent.add(item.highlightMesh);
+            }
+            item.highlightMesh.visible = true;
+        } else if (item.highlightMesh) {
+            item.highlightMesh.visible = false;
+        }
+    });
+    
+    console.log(`🔍 Highlighting items: ${filter}`);
+}
+
+/**
+ * Clear all highlight effects
+ */
+function clearStockHighlights(stockItems) {
+    stockItems.forEach(item => {
+        if (item.highlightMesh) {
+            item.highlightMesh.visible = false;
+        }
+    });
+    console.log('✨ Highlights cleared');
+}

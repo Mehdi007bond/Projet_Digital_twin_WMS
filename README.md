@@ -718,6 +718,42 @@ Before you begin, ensure you have the following installed:
 | **PostgreSQL** | 14+ | [postgresql.org](https://postgresql.org/) |
 | **Git** | Latest | [git-scm.com](https://git-scm.com/) |
 
+### 🐳 Docker (recommandé)
+
+La base PostgreSQL est gérée via Docker Compose.
+
+Fichier Docker :
+- [docker-compose.yml](docker-compose.yml)
+
+Étapes :
+1. Ouvre un terminal à la racine du projet.
+2. Lance Docker Compose avec la commande docker compose up.
+3. La base PostgreSQL est disponible sur localhost:5432.
+
+Variables d’environnement (optionnelles) pour PostgreSQL :
+- POSTGRES_DB (par défaut : digital_twin)
+- POSTGRES_USER (par défaut : digital_twin)
+- POSTGRES_PASSWORD (par défaut : digital_twin)
+
+### ☁️ Supabase (PostgreSQL en ligne)
+
+J’ai ajouté un schéma et des données de base prêtes à coller dans Supabase :
+- [database/schema.sql](database/schema.sql)
+- [database/seed_data.sql](database/seed_data.sql)
+
+Étapes :
+1. Crée un projet Supabase.
+2. Ouvre SQL Editor.
+3. Colle d’abord le contenu de [database/schema.sql](database/schema.sql).
+4. Puis colle [database/seed_data.sql](database/seed_data.sql).
+
+Tu auras les tables principales (warehouse, racks, locations, stock, agvs, missions) et des vues KPI.
+
+#### 🔴 Realtime (frontend)
+1. Ouvre [frontend/js/supabase-config.js](frontend/js/supabase-config.js) et remplace l’URL + clé anon.
+2. Dans Supabase > Database > Replication, active le realtime pour : agvs, stock_items, missions.
+3. Ouvre [frontend/index.html](frontend/index.html) et lance le frontend.
+
 ### 🔧 Installation
 
 #### 1️⃣ Clone the Repository

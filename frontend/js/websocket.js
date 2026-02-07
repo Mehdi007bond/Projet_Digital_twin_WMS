@@ -11,6 +11,11 @@ let maxReconnectAttempts = 5;
 let reconnectDelay = 3000;
 let demoMode = true; // Start in demo mode for Sprint 1
 
+// Supabase realtime
+let supabaseClient = null;
+let supabaseChannel = null;
+let kpiRefreshTimeout = null;
+
 // Demo simulation state
 let demoInterval = null;
 let simulationTime = 0;
@@ -22,13 +27,249 @@ let simulationTime = 0;
  */
 function initWebSocket(agvs, stockItems) {
     console.log('🔌 Initializing WebSocket connection...');
-    
+
+    // Prefer Supabase Realtime if configured
+    if (isSupabaseConfigured()) {
+        initSupabaseRealtime(agvs, stockItems);
+        return;
+    }
+
     // Start in demo mode for Sprint 1
     updateConnectionStatus('demo', 'Demo Mode (No Backend)');
     startDemoMode(agvs, stockItems);
-    
+
     // Attempt to connect to backend (will fail gracefully in Sprint 1)
     // attemptConnection(agvs, stockItems);
+}
+
+function isSupabaseConfigured() {
+    return (
+        typeof window !== 'undefined' &&
+        typeof window.SUPABASE_URL === 'string' &&
+        typeof window.SUPABASE_ANON_KEY === 'string' &&
+        window.SUPABASE_URL.startsWith('https://') &&
+        window.SUPABASE_ANON_KEY.length > 20 &&
+        !window.SUPABASE_URL.includes('YOUR_PROJECT') &&
+        !window.SUPABASE_ANON_KEY.includes('YOUR_SUPABASE_ANON_KEY')
+    );
+}
+
+async function initSupabaseRealtime(agvs, stockItems) {
+    try {
+        if (!window.supabase || !window.supabase.createClient) {
+            throw new Error('Supabase client not loaded');
+        }
+
+        supabaseClient = window.supabase.createClient(
+            window.SUPABASE_URL,
+            window.SUPABASE_ANON_KEY
+        );
+
+        updateConnectionStatus('connected', 'Supabase Realtime');
+        demoMode = false;
+        stopDemoMode();
+
+        await refreshSupabaseSnapshots(agvs, stockItems);
+        subscribeSupabaseRealtime(agvs, stockItems);
+    } catch (error) {
+        console.error('Supabase init error:', error);
+        updateConnectionStatus('demo', 'Demo Mode (Supabase Error)');
+        demoMode = true;
+        startDemoMode(agvs, stockItems);
+    }
+}
+
+async function refreshSupabaseSnapshots(agvs, stockItems) {
+    if (!supabaseClient) return;
+
+    const [agvResult, stockResult, kpiStockResult, kpiAgvResult, missionsResult] = await Promise.all([
+        supabaseClient.from('agvs').select('*'),
+        supabaseClient.from('stock_items').select('*'),
+        supabaseClient.from('v_kpi_stock').select('*').single(),
+        supabaseClient.from('v_kpi_agv').select('*').single(),
+        supabaseClient.from('missions').select('id,status')
+    ]);
+
+    if (!agvResult.error && agvResult.data) {
+        agvResult.data.forEach(row => applyAgvRow(row, agvs));
+    }
+
+    if (!stockResult.error && stockResult.data) {
+        applyStockSnapshot(stockResult.data, stockItems);
+    }
+
+    if (!kpiStockResult.error && !kpiAgvResult.error) {
+        applyKpiSnapshot(kpiStockResult.data, kpiAgvResult.data, missionsResult?.data);
+    }
+}
+
+function subscribeSupabaseRealtime(agvs, stockItems) {
+    if (!supabaseClient) return;
+
+    if (supabaseChannel) {
+        supabaseClient.removeChannel(supabaseChannel);
+    }
+
+    supabaseChannel = supabaseClient
+        .channel('wms-realtime')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'agvs' },
+            payload => {
+                const row = payload.new || payload.old;
+                if (row) {
+                    applyAgvRow(row, agvs);
+                    scheduleKpiRefresh(agvs, stockItems);
+                }
+            }
+        )
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'stock_items' },
+            payload => {
+                applyStockChange(payload, stockItems);
+                scheduleKpiRefresh(agvs, stockItems);
+            }
+        )
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'missions' },
+            payload => {
+                applyMissionChange(payload);
+                scheduleKpiRefresh(agvs, stockItems);
+            }
+        )
+        .subscribe(status => {
+            if (status === 'SUBSCRIBED') {
+                updateConnectionStatus('connected', 'Supabase Realtime');
+            }
+        });
+}
+
+function applyAgvRow(row, agvs) {
+    const data = {
+        agv_id: row.id,
+        x: row.x_m,
+        y: row.y_m,
+        z: row.z_m,
+        rotation: row.rotation_rad || 0,
+        status: row.status,
+        battery: row.battery,
+        speed: row.speed_mps || 0
+    };
+    handleAGVPositionUpdate(data, agvs);
+}
+
+function applyStockSnapshot(rows, stockItems) {
+    const byLocation = new Map();
+    stockItems.forEach(item => {
+        if (item.location && item.location.id) {
+            byLocation.set(item.location.id, item);
+        }
+    });
+
+    const dbLocations = new Set();
+    rows.forEach(row => {
+        dbLocations.add(row.location_id);
+        const item = byLocation.get(row.location_id);
+        if (item) {
+            item.setFillLevel(row.fill_level);
+            item.category = row.category || item.category;
+            item.location.occupied = row.fill_level > 0;
+        }
+    });
+
+    stockItems.forEach(item => {
+        if (!dbLocations.has(item.location.id)) {
+            item.setFillLevel(0);
+            item.location.occupied = false;
+        }
+    });
+}
+
+function applyStockChange(payload, stockItems) {
+    const row = payload.new || payload.old;
+    if (!row) return;
+
+    const item = stockItems.find(s => s.location && s.location.id === row.location_id);
+    if (!item) return;
+
+    if (payload.eventType === 'DELETE') {
+        item.setFillLevel(0);
+        item.location.occupied = false;
+        return;
+    }
+
+    item.setFillLevel(row.fill_level);
+    item.category = row.category || item.category;
+    item.location.occupied = row.fill_level > 0;
+}
+
+function applyMissionChange(payload) {
+    const missionsElement = document.getElementById('missions-active');
+    if (!missionsElement) return;
+
+    if (payload.eventType === 'INSERT') {
+        const current = parseInt(missionsElement.textContent || '0', 10);
+        missionsElement.textContent = String(current + 1);
+    } else if (payload.eventType === 'DELETE') {
+        const current = parseInt(missionsElement.textContent || '0', 10);
+        missionsElement.textContent = String(Math.max(0, current - 1));
+    }
+}
+
+function scheduleKpiRefresh(agvs, stockItems) {
+    if (kpiRefreshTimeout) {
+        clearTimeout(kpiRefreshTimeout);
+    }
+
+    kpiRefreshTimeout = setTimeout(async () => {
+        if (!supabaseClient) return;
+        const [kpiStockResult, kpiAgvResult, missionsResult] = await Promise.all([
+            supabaseClient.from('v_kpi_stock').select('*').single(),
+            supabaseClient.from('v_kpi_agv').select('*').single(),
+            supabaseClient.from('missions').select('id,status')
+        ]);
+        if (!kpiStockResult.error && !kpiAgvResult.error) {
+            applyKpiSnapshot(kpiStockResult.data, kpiAgvResult.data, missionsResult?.data);
+        }
+    }, 400);
+}
+
+function applyKpiSnapshot(kpiStock, kpiAgv, missions) {
+    const fillRate = kpiStock?.fill_rate_percent ?? null;
+    const totalLocations = kpiStock?.total_locations ?? null;
+    const filledLocations = kpiStock?.filled_locations ?? null;
+    const agvCount = kpiAgv?.total_agvs ?? null;
+
+    if (fillRate !== null) {
+        const stockLevel = document.getElementById('stock-level');
+        if (stockLevel) stockLevel.textContent = `${fillRate}%`;
+
+        const stockBarFill = document.getElementById('stock-bar-fill');
+        if (stockBarFill) stockBarFill.style.width = `${fillRate}%`;
+    }
+
+    if (filledLocations !== null) {
+        const stockOccupied = document.getElementById('stock-occupied');
+        if (stockOccupied) stockOccupied.textContent = filledLocations;
+    }
+
+    if (totalLocations !== null) {
+        const stockTotal = document.getElementById('stock-total');
+        if (stockTotal) stockTotal.textContent = totalLocations;
+    }
+
+    if (agvCount !== null) {
+        const agvCountEl = document.getElementById('agv-count');
+        if (agvCountEl) agvCountEl.textContent = agvCount;
+    }
+
+    if (Array.isArray(missions)) {
+        const activeMissions = missions.filter(m => !['completed', 'cancelled'].includes(m.status)).length;
+        const missionsElement = document.getElementById('missions-active');
+        if (missionsElement) missionsElement.textContent = activeMissions;
+    }
 }
 
 /**

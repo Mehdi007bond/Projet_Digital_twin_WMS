@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis - Digital Twin WMS</title>
+    <link rel="stylesheet" href="css/stock-analysis.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1>📊 Analyse de Stock - Entrepôt Digital Twin</h1>
+            <button class="btn-back" onclick="window.location.href='index.html'">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Retour à l'entrepôt 3D
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Statistics Cards -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="total-items">-</div>
+                    <div class="stat-label">Total Items</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="occupied-items">-</div>
+                    <div class="stat-label">Occupés</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">❌</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="empty-items">-</div>
+                    <div class="stat-label">Vides</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="fill-rate">-</div>
+                    <div class="stat-label">Taux d'occupation</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Category Filters -->
+        <section class="filters-section">
+            <h2>Filtres par Catégorie ABC</h2>
+            <div class="filter-buttons">
+                <button class="filter-btn-abc active" data-filter="all">
+                    <span class="filter-icon">🔍</span>
+                    Tous les items
+                </button>
+                <button class="filter-btn-abc" data-filter="A">
+                    <span class="filter-icon">🔴</span>
+                    Type A (Haute valeur)
+                </button>
+                <button class="filter-btn-abc" data-filter="B">
+                    <span class="filter-icon">🟡</span>
+                    Type B (Valeur moyenne)
+                </button>
+                <button class="filter-btn-abc" data-filter="C">
+                    <span class="filter-icon">🟢</span>
+                    Type C (Faible valeur)
+                </button>
+            </div>
+        </section>
+
+        <!-- Additional Filters -->
+        <section class="filters-section">
+            <h2>Filtres par Statut</h2>
+            <div class="filter-buttons">
+                <button class="filter-btn-status" data-filter="low">
+                    <span class="filter-icon">⚠️</span>
+                    Stock Faible (&lt;25%)
+                </button>
+                <button class="filter-btn-status" data-filter="empty">
+                    <span class="filter-icon">🚫</span>
+                    Vides (0%)
+                </button>
+                <button class="filter-btn-status" data-filter="full">
+                    <span class="filter-icon">✨</span>
+                    Pleins (&gt;90%)
+                </button>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="chart-container">
+                <h2>Répartition par Catégorie ABC</h2>
+                <canvas id="abc-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2>Distribution des Niveaux de Remplissage</h2>
+                <canvas id="fill-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Stock Table -->
+        <section class="table-section">
+            <div class="table-header">
+                <h2>Liste Détaillée des Items</h2>
+                <div class="table-controls">
+                    <input type="text" id="search-input" placeholder="🔍 Rechercher par ID, SKU, position...">
+                    <button class="btn-export" id="export-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        Exporter CSV
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="stock-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="id">ID <span class="sort-icon">↕</span></th>
+                            <th data-sort="position">Position <span class="sort-icon">↕</span></th>
+                            <th data-sort="category">Catégorie ABC <span class="sort-icon">↕</span></th>
+                            <th data-sort="sku">SKU <span class="sort-icon">↕</span></th>
+                            <th data-sort="fill">Niveau (%)<span class="sort-icon">↕</span></th>
+                            <th data-sort="status">Statut <span class="sort-icon">↕</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-tbody">
+                        <!-- Rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-footer">
+                <div class="showing-info">Affichage <span id="showing-count">0</span> sur <span id="total-count">0</span> items</div>
+                <div class="pagination" id="pagination">
+                    <!-- Pagination buttons will be added by JavaScript -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Supabase client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.6/dist/umd/supabase.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <!-- Data Pipeline & Virtual Scroller -->
+    <script src="js/data-pipeline.js"></script>
+    <script src="js/virtual-scroller.js"></script>
+    <!-- Stock Analysis Script -->
+    <script src="js/stock-analysis.js"></script>
+</body>
+</html>

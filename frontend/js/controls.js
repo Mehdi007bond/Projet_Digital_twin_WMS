@@ -258,6 +258,78 @@ function setupDisplayToggles() {
             });
         }
     });
+
+    // Setup stock verification button
+    setupStockVerificationControls();
+}
+
+/**
+ * Setup stock verification controls
+ */
+function setupStockVerificationControls() {
+    const verifyBtn = document.getElementById('verify-stock-btn');
+    if (verifyBtn) {
+        verifyBtn.addEventListener('click', () => {
+            if (window.digitalTwin && window.digitalTwin.stockItems) {
+                const verification = performStockVerification(window.digitalTwin.stockItems);
+                displayStockVerificationReport(verification);
+                
+                // Show alert to user
+                showStockVerificationAlert(verification);
+            } else {
+                console.warn('Stock items not available');
+            }
+        });
+    }
+
+    // Setup filter buttons
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const filter = btn.dataset.filter;
+            if (window.digitalTwin && window.digitalTwin.stockItems) {
+                if (filter === 'clear') {
+                    clearStockHighlights(window.digitalTwin.stockItems);
+                } else {
+                    highlightStockByFilter(window.digitalTwin.stockItems, filter);
+                }
+            }
+        });
+    });
+}
+
+/**
+ * Show stock verification alert in UI
+ */
+function showStockVerificationAlert(verification) {
+    const alertsContainer = document.getElementById('alerts-container');
+    if (!alertsContainer) return;
+
+    // Clear old alerts
+    alertsContainer.innerHTML = '';
+
+    // Create summary alert
+    const summaryAlert = document.createElement('div');
+    summaryAlert.className = 'alert alert-info';
+    summaryAlert.innerHTML = `
+        <strong>📋 Stock Verification Complete</strong><br>
+        Occupied: ${verification.occupied}/${verification.totalItems} (${verification.fillRate}%)<br>
+        Low Stock: ${verification.lowStock.length} items
+    `;
+    alertsContainer.appendChild(summaryAlert);
+
+    // Add specific alerts
+    verification.alerts.forEach(alert => {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${alert.level}`;
+        alertDiv.innerHTML = `<strong>${alert.level.toUpperCase()}:</strong> ${alert.message}`;
+        alertsContainer.appendChild(alertDiv);
+    });
+
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        alertsContainer.innerHTML = '';
+    }, 10000);
 }
 
 /**
@@ -459,3 +531,64 @@ function updateSimulationTime() {
 // Update time display every second
 setInterval(updateSimulationTime, 1000);
 updateSimulationTime();
+
+/**
+ * Setup Stock Analysis Page button
+ */
+function setupAnalysisPageButton() {
+    const openAnalysisBtn = document.getElementById('open-analysis-btn');
+    if (openAnalysisBtn) {
+        openAnalysisBtn.addEventListener('click', () => {
+            // Save current stock data to localStorage before opening the page
+            if (window.digitalTwin && window.digitalTwin.stockItems) {
+                const stockData = window.digitalTwin.stockItems.map(item => ({
+                    id: item.id,
+                    aisle: item.aisle,
+                    rack: item.rack,
+                    level: item.level,
+                    position: `Allée ${item.aisle} - Rack ${item.rack} - Niveau ${item.level}`,
+                    category: item.category,
+                    sku: item.sku || '-',
+                    fillLevel: item.fillLevel,
+                    occupied: item.fillLevel > 0,
+                    status: item.fillLevel === 0 ? 'Vide' : 
+                            item.fillLevel < 25 ? 'Faible' : 
+                            item.fillLevel < 75 ? 'Moyen' : 
+                            item.fillLevel < 90 ? 'Bon' : 'Plein'
+                }));
+                
+                localStorage.setItem('warehouseStockData', JSON.stringify(stockData));
+                console.log('Stock data saved to localStorage:', stockData.length, 'items');
+            }
+            
+            // Open the analysis page
+            window.open('stock-analysis.html', '_blank');
+        });
+        console.log('Stock Analysis Page button initialized');
+    }
+}
+
+/**
+ * Setup 2D Warehouse Map button
+ */
+function setup2DMapButton() {
+    const open2DMapBtn = document.getElementById('open-2d-map-btn');
+    if (open2DMapBtn) {
+        open2DMapBtn.addEventListener('click', () => {
+            // Open the 2D warehouse map page
+            window.open('warehouse-2d.html', '_blank');
+        });
+        console.log('2D Warehouse Map button initialized');
+    }
+}
+
+// Initialize the buttons when DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setupAnalysisPageButton();
+        setup2DMapButton();
+    });
+} else {
+    setupAnalysisPageButton();
+    setup2DMapButton();
+}

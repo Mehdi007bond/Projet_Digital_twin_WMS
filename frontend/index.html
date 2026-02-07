@@ -222,6 +222,50 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Stock Verification -->
+            <div class="control-group">
+                <label>Stock Verification</label>
+                <button class="control-btn full-width" id="verify-stock-btn" style="width: 100%; justify-content: center; padding: 10px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 8px;">
+                        <path d="M9 11l3 3L22 4"></path>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                    <span>Verify Stock</span>
+                </button>
+                <div id="stock-filter-buttons" style="display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap;">
+                    <button class="filter-btn" data-filter="low" style="font-size: 11px; padding: 5px 10px;">Low Stock</button>
+                    <button class="filter-btn" data-filter="empty" style="font-size: 11px; padding: 5px 10px;">Empty</button>
+                    <button class="filter-btn" data-filter="full" style="font-size: 11px; padding: 5px 10px;">Full</button>
+                    <button class="filter-btn" data-filter="clear" style="font-size: 11px; padding: 5px 10px;">Clear</button>
+                </div>
+            </div>
+
+            <!-- Stock Analysis Page -->
+            <div class="control-group">
+                <label>Stock Analysis</label>
+                <button class="control-btn full-width" id="open-analysis-btn" style="width: 100%; justify-content: center; padding: 10px; background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 8px;">
+                        <path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                    <span>Analysis Page</span>
+                </button>
+            </div>
+
+            <!-- Warehouse 2D Map -->
+            <div class="control-group">
+                <label>Warehouse Map 2D</label>
+                <button class="control-btn full-width" id="open-2d-map-btn" style="width: 100%; justify-content: center; padding: 10px; background: linear-gradient(135deg, #10b981, #059669);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; margin-right: 8px;">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span>2D Map</span>
+                </button>
+            </div>
+                    <span>Open Analysis Page</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -428,6 +472,8 @@
     <script src="lib/three.min.js"></script>
     <script src="lib/js/controls/OrbitControls.js"></script>
     <script src="lib/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.6/dist/umd/supabase.min.js"></script>
+    <script src="js/supabase-config.js"></script>
     <script src="js/warehouse.js"></script>
     <script src="js/racks.js"></script>
     <script src="js/navigation.js"></script>

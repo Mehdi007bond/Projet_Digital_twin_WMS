@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Warehouse Map - Digital Twin WMS</title>
+    <link rel="stylesheet" href="css/warehouse-2d.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1>🗺️ Plan d'Entrepôt 2D - Digital Twin WMS</h1>
+            <button class="btn-back" onclick="window.location.href='index.html'">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Retour à la vue 3D
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Control Panel -->
+        <aside class="control-panel">
+            <div class="panel-section">
+                <h2>📤 Import CSV</h2>
+                <div class="file-upload">
+                    <input type="file" id="csv-input" accept=".csv" />
+                    <label for="csv-input" class="btn-upload">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        Télécharger CSV
+                    </label>
+                    <div id="upload-status" class="upload-status"></div>
+                </div>
+                <button class="btn-primary" id="generate-sample-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="1"></circle>
+                        <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08-5.08l4.24-4.24"/>
+                    </svg>
+                    Générer données test
+                </button>
+                <a href="#" id="download-template-btn" class="btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Template CSV
+                </a>
+            </div>
+
+            <div class="panel-section">
+                <h2>🔍 Filtres</h2>
+                <div class="filter-group">
+                    <label>Allée :</label>
+                    <input type="number" id="aisle-filter" min="1" max="3" placeholder="Toutes">
+                </div>
+                <div class="filter-group">
+                    <label>Niveau :</label>
+                    <select id="level-filter">
+                        <option value="">Tous les niveaux</option>
+                        <option value="1">Niveau 1</option>
+                        <option value="2">Niveau 2</option>
+                        <option value="3">Niveau 3</option>
+                        <option value="4">Niveau 4</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Statut :</label>
+                    <select id="status-filter">
+                        <option value="">Tous les statuts</option>
+                        <option value="empty">Vide (0%)</option>
+                        <option value="low">Faible (1-24%)</option>
+                        <option value="medium">Moyen (25-89%)</option>
+                        <option value="full">Plein (90-100%)</option>
+                    </select>
+                </div>
+                <button class="btn-secondary" id="reset-filters-btn" style="width: 100%; margin-top: 10px;">
+                    Réinitialiser filtres
+                </button>
+            </div>
+
+            <div class="panel-section">
+                <h2>📊 Légende</h2>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="color-box full"></div>
+                        <span>Plein (90-100%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box medium"></div>
+                        <span>Moyen (25-89%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box low"></div>
+                        <span>Faible (1-24%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box empty"></div>
+                        <span>Vide (0%)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h2>📈 Statistiques</h2>
+                <div class="stats">
+                    <div class="stat-row">
+                        <span>Total items:</span>
+                        <strong id="stat-total">0</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Occupés:</span>
+                        <strong id="stat-occupied">0</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Vides:</span>
+                        <strong id="stat-empty">0</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Taux moyen:</span>
+                        <strong id="stat-average">0%</strong>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Warehouse Map -->
+        <section class="warehouse-container">
+            <div class="warehouse-map" id="warehouse-map">
+                <!-- Racks will be generated here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">✕</button>
+            <h2 id="modal-title">Détails du Rack</h2>
+            <div id="modal-details"></div>
+            <button class="modal-close-btn" id="modal-close-btn">Fermer</button>
+        </div>
+    </div>
+
+    <script src="js/data-pipeline.js"></script>
+    <script src="js/virtual-scroller.js"></script>
+    <script src="js/warehouse-2d.js"></script>
+</body>
+</html>

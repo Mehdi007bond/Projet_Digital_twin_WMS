@@ -168,8 +168,8 @@ function hideLoadingScreen() {
  */
 function initScene() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0f);
-    scene.fog = new THREE.Fog(0x0a0a0f, 50, 150);
+    scene.background = new THREE.Color(0x1a1a1f);
+    scene.fog = new THREE.Fog(0x1a1a1f, 100, 200);
     console.log('✓ Scene initialized');
 }
 
@@ -185,25 +185,25 @@ function initCamera() {
 }
 
 /**
- * Initialize the WebGL renderer with high quality settings
+ * Initialize the WebGL renderer with optimized settings for FPS
  */
 function initRenderer() {
     renderer = new THREE.WebGLRenderer({
-        antialias: true,
+        antialias: false,
         alpha: true,
         powerPreference: 'high-performance'
     });
     
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(1);
     
-    // Enable shadows
+    // Enable shadows with reduced quality
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.BasicShadowMap;
     
     // Tone mapping for better colors
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.toneMappingExposure = 1.5;
     
     // Append to canvas container
     const container = document.getElementById('canvas-container');
@@ -231,11 +231,11 @@ function initControls() {
  */
 function initLights() {
     // Ambient light for base illumination
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
-    // Main directional light (sun)
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    // Main directional light (sun) - optimized shadows
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(30, 40, 20);
     dirLight.castShadow = true;
     dirLight.shadow.camera.left = -50;
@@ -244,13 +244,13 @@ function initLights() {
     dirLight.shadow.camera.bottom = -50;
     dirLight.shadow.camera.near = 0.1;
     dirLight.shadow.camera.far = 100;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.bias = -0.0001;
+    dirLight.shadow.mapSize.width = 512;
+    dirLight.shadow.mapSize.height = 512;
+    dirLight.shadow.bias = -0.001;
     scene.add(dirLight);
 
     // Hemisphere light for natural lighting
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.3);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
     hemiLight.position.set(0, 50, 0);
     scene.add(hemiLight);
 
@@ -442,6 +442,3 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
-
-// Export functions for use in other modules (initial placeholder)
-publishGlobals();

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Connection</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1f;
+            color: #e5e7eb;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background: #2d2d35;
+        }
+        .success { border-left: 4px solid #10b981; }
+        .error { border-left: 4px solid #ef4444; }
+        .warning { border-left: 4px solid #f59e0b; }
+        pre {
+            background: #1a1a1f;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test de connexion Supabase</h1>
+    
+    <div id="results"></div>
+    
+    <div style="margin-top: 20px;">
+        <button onclick="testConnection()">🔄 Tester la connexion</button>
+        <button onclick="testLocations()">📍 Tester les locations</button>
+        <button onclick="testStockItems()">📦 Tester les stock_items</button>
+        <button onclick="clearResults()">🗑️ Effacer</button>
+    </div>
+
+    <!-- Supabase client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.6/dist/umd/supabase.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+        
+        async function testConnection() {
+            addResult('<strong>📡 Test de connexion Supabase...</strong>', 'warning');
+            
+            try {
+                // Vérifier les variables
+                if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+                    addResult('❌ Variables Supabase non définies', 'error');
+                    return;
+                }
+                
+                addResult(`URL: ${window.SUPABASE_URL}`, 'success');
+                addResult(`Key length: ${window.SUPABASE_ANON_KEY.length} caractères`, 'success');
+                
+                // Créer le client
+                const supabase = window.supabase.createClient(
+                    window.SUPABASE_URL, 
+                    window.SUPABASE_ANON_KEY
+                );
+                
+                addResult('✅ Client Supabase créé avec succès', 'success');
+                
+                // Test simple
+                const { data, error } = await supabase
+                    .from('locations')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    addResult(`❌ Erreur: ${error.message}`, 'error');
+                    addResult(`<pre>${JSON.stringify(error, null, 2)}</pre>`, 'error');
+                } else {
+                    addResult('✅ Connexion réussie à Supabase', 'success');
+                }
+                
+            } catch (error) {
+                addResult(`❌ Exception: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+        
+        async function testLocations() {
+            addResult('<strong>📍 Test des locations...</strong>', 'warning');
+            
+            try {
+                const supabase = window.supabase.createClient(
+                    window.SUPABASE_URL, 
+                    window.SUPABASE_ANON_KEY
+                );
+                
+                const { data, error, count } = await supabase
+                    .from('locations')
+                    .select('*');
+                
+                if (error) {
+                    addResult(`❌ Erreur: ${error.message}`, 'error');
+                    addResult(`<pre>${JSON.stringify(error, null, 2)}</pre>`, 'error');
+                } else {
+                    addResult(`✅ ${data.length} locations trouvées`, 'success');
+                    addResult(`<pre>${JSON.stringify(data.slice(0, 3), null, 2)}</pre>`, 'success');
+                }
+                
+            } catch (error) {
+                addResult(`❌ Exception: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+        
+        async function testStockItems() {
+            addResult('<strong>📦 Test des stock_items...</strong>', 'warning');
+            
+            try {
+                const supabase = window.supabase.createClient(
+                    window.SUPABASE_URL, 
+                    window.SUPABASE_ANON_KEY
+                );
+                
+                const { data, error } = await supabase
+                    .from('stock_items')
+                    .select('*');
+                
+                if (error) {
+                    addResult(`❌ Erreur: ${error.message}`, 'error');
+                    addResult(`<pre>${JSON.stringify(error, null, 2)}</pre>`, 'error');
+                } else {
+                    addResult(`✅ ${data.length} stock items trouvés`, 'success');
+                    addResult(`<pre>${JSON.stringify(data.slice(0, 3), null, 2)}</pre>`, 'success');
+                }
+                
+            } catch (error) {
+                addResult(`❌ Exception: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+        }
+        
+        // Auto-test au chargement
+        window.addEventListener('DOMContentLoaded', () => {
+            addResult('🚀 Page de test chargée', 'success');
+            testConnection();
+        });
+    </script>
+</body>
+</html>
