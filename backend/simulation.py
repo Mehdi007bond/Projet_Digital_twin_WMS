@@ -12,8 +12,8 @@ except ImportError:
     requests = None
 
 # Config Supabase (même que frontend)
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://kzmukwchzkakldninibv.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_secret_FedgNdBrPrnZbxDpNXOHtw_9JrMiCqY")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "....")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "....")
 
 # Helper REST API
 def supabase_request(method, table, data=None, filters=None, select='*', single=False, limit=None):
