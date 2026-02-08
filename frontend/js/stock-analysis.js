@@ -1,6 +1,6 @@
 // Stock Analysis Page - Digital Twin WMS
+// Architecture 100% Docker locale (SANS Supabase)
 // Manages stock data visualization, filtering, and analysis
-// Enhanced with data pipeline for large-scale data handling
 
 let stockData = [];
 let filteredData = [];
@@ -12,7 +12,7 @@ let virtualScroller = null;
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 Initializing Stock Analysis with Data Pipeline');
+    console.log('🚀 Initializing Stock Analysis (API Docker locale)');
     
     // Initialize data pipeline
     await dataPipeline.initDB();
@@ -23,67 +23,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateDisplay();
 });
 
-// Load stock data from IndexedDB or localStorage
+// Load stock data from local Docker API
 async function loadStockData() {
     try {
-        // Try Supabase first if configured
-        if (isSupabaseConfigured()) {
-            console.log('📡 Loading from Supabase...');
-            console.log('Supabase URL:', window.SUPABASE_URL);
-            console.log('Supabase key length:', window.SUPABASE_ANON_KEY?.length);
+        console.log('📡 Loading from Docker API...');
+        
+        // Charger from le backend fastapi local
+        const locations = await dataPipeline.loadLocations();
+        const stock_items = await dataPipeline.loadStockItems();
+        
+        if (locations && locations.length > 0 && stock_items) {
+            stockData = locations.map(loc => {
+                const stock = stock_items.find(s => s.location_id === loc.id);
+                const fillLevel = stock?.fill_level || 0;
+                const occupied = !!stock && fillLevel > 0;
+                return {
+                    id: loc.id,
+                    aisle: loc.row_no || 0,
+                    rack: loc.bay_no || 0,
+                    level: loc.level_no || 0,
+                    position: `R${loc.row_no}B${loc.bay_no}L${loc.level_no}`,
+                    category: stock?.category || 'C',
+                    sku: stock?.id || '-',
+                    fillLevel: fillLevel,
+                    occupied: occupied,
+                    status: !stock || fillLevel === 0 ? 'Vide' : fillLevel < 25 ? 'Faible' : fillLevel < 75 ? 'Moyen' : fillLevel < 90 ? 'Bon' : 'Plein'
+                };
+            });
             
-            const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-            
-            console.log('Querying locations...');
-            const { data: locations, error: locError } = await supabase.from('locations').select('*');
-            console.log('Locations result:', { count: locations?.length, error: locError });
-            
-            console.log('Querying stock_items...');
-            const { data: stock_items, error: stockError } = await supabase.from('stock_items').select('*');
-            console.log('Stock items result:', { count: stock_items?.length, error: stockError });
-            
-            if (!locError && locations && locations.length > 0) {
-                stockData = locations.map(loc => {
-                    const stock = stock_items?.find(s => s.location_id === loc.id);
-                    const fillLevel = stock?.fill_level || 0;
-                    const occupied = !!stock && fillLevel > 0;
-                    return {
-                        id: loc.id,
-                        aisle: loc.row_no,
-                        rack: loc.bay_no,
-                        level: loc.level_no,
-                        position: `R${loc.row_no}B${loc.bay_no}L${loc.level_no}`,
-                        category: stock?.category || 'C',
-                        sku: stock?.product_id || '-',
-                        fillLevel: fillLevel,
-                        occupied: occupied,
-                        status: !stock || fillLevel === 0 ? 'Vide' : fillLevel < 25 ? 'Faible' : fillLevel < 75 ? 'Moyen' : fillLevel < 90 ? 'Bon' : 'Plein'
-                    };
-                });
-                
-                filteredData = [...stockData];
-                console.log(`✅ Loaded ${stockData.length} items from Supabase`);
-                console.log('Sample data:', stockData.slice(0, 3));
-                return;
-            } else {
-                console.warn('⚠️ No locations found or error occurred:', locError);
-            }
+            filteredData = [...stockData];
+            console.log(`✅ Loaded ${stockData.length} items from Docker API`);
+            console.log('Sample data:', stockData.slice(0, 3));
+            return;
         } else {
-            console.warn('⚠️ Supabase not configured properly');
+            console.warn('⚠️ No locations found from API');
         }
         
-        // Try IndexedDB first (data pipeline)
+        // Fallback: Try IndexedDB
         const dbData = await dataPipeline.loadData('stockData');
         
         if (dbData && dbData.length > 0) {
             stockData = dbData;
-            console.log(`✅ Loaded ${stockData.length} items from IndexedDB`);
+            console.log(`✅ Loaded ${stockData.length} items from IndexedDB cache`);
         } else {
             // Try localStorage (fallback)
             const savedData = localStorage.getItem('warehouseStockData');
             if (savedData) {
                 stockData = JSON.parse(savedData);
-                // Save to IndexedDB for future use
                 await dataPipeline.saveData(stockData, 'stockData');
             } else {
                 // Generate sample data if none exists
@@ -100,18 +86,6 @@ async function loadStockData() {
         filteredData = [...stockData];
         await dataPipeline.saveData(stockData, 'stockData');
     }
-}
-
-function isSupabaseConfigured() {
-    return (
-        typeof window !== 'undefined' &&
-        typeof window.SUPABASE_URL === 'string' &&
-        typeof window.SUPABASE_ANON_KEY === 'string' &&
-        window.SUPABASE_URL.startsWith('https://') &&
-        window.SUPABASE_ANON_KEY.length > 20 &&
-        !window.SUPABASE_URL.includes('YOUR_PROJECT') &&
-        !window.SUPABASE_ANON_KEY.includes('YOUR_SUPABASE_ANON_KEY')
-    );
 }
 
 // Generate sample stock data for demonstration

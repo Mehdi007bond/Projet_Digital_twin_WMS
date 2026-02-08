@@ -47,6 +47,22 @@
 
 ---
 
+---
+
+## 🚨 IMPORTANT: Architecture Complètement Migrée vers Docker
+
+**Cette section du README contient des références historiques à Supabase.**
+
+**➡️ Pour la documentation complète et à jour, consultez :** [**ARCHITECTURE_DOCKER_COMPLETE.md**](ARCHITECTURE_DOCKER_COMPLETE.md)
+
+**Changements majeurs:**
+- ✅ Docker Compose 100% (PostgreSQL, FastAPI, Nginx)
+- ✅ Zéro dépendance cloud Supabase
+- ✅ API complète en FastAPI avec WebSocket
+- ✅ Frontend migré vers api-config.js
+
+---
+
 ## 📋 Table of Contents
 
 - [📖 About The Project](#-about-the-project)
@@ -735,7 +751,7 @@ Variables d’environnement (optionnelles) pour PostgreSQL :
 - POSTGRES_USER (par défaut : digital_twin)
 - POSTGRES_PASSWORD (par défaut : digital_twin)
 
-### ☁️ Supabase (PostgreSQL en ligne)
+### ☁️ Architecture Antérieure - OBSOLÈTE (Migration vers Docker 100% Complète)
 
 J’ai ajouté un schéma et des données de base prêtes à coller dans Supabase :
 - [database/schema.sql](database/schema.sql)

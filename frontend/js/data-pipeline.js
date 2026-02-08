@@ -1,7 +1,7 @@
 /**
  * Data Pipeline Module - Digital Twin WMS
- * Handles large-scale data processing, caching, and optimization
- * Supports: IndexedDB storage, data streaming, batch processing, worker threads
+ * Architecture 100% Docker locale (SANS Supabase)
+ * Handles data processing via API locale avec IndexedDB cache
  */
 
 class DataPipeline {
@@ -11,7 +11,200 @@ class DataPipeline {
         this.dbName = 'WarehouseDB';
         this.dbVersion = 1;
         this.batchSize = 1000;
+        this.apiBase = window.API_CONFIG?.BASE_URL || '/api';
         this.initDB();
+    }
+
+    /**
+     * Fetch data from local API (remplace Supabase)
+     */
+    async fetchFromAPI(endpoint, options = {}) {
+        try {
+            const url = `${this.apiBase}/${endpoint}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error(`Error fetching ${endpoint}:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Charger les locations depuis l'API locale
+     */
+    async loadLocations() {
+        try {
+            console.log('📍 Fetching locations from local API...');
+            const locations = await this.fetchFromAPI('locations');
+            console.log(`✅ Loaded ${locations.length} locations`);
+            await this.saveData(locations, 'locations');
+            return locations;
+        } catch (error) {
+            console.error('❌ Error loading locations:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Charger les stock items depuis l'API locale
+     */
+    async loadStockItems() {
+        try {
+            console.log('📦 Fetching stock items from local API...');
+            const stockItems = await this.fetchFromAPI('stock_items');
+            console.log(`✅ Loaded ${stockItems.length} stock items`);
+            await this.saveData(stockItems, 'stockData');
+            return stockItems;
+        } catch (error) {
+            console.error('❌ Error loading stock items:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Charger les AGVs depuis l'API locale
+     */
+    async loadAGVs() {
+        try {
+            console.log('🤖 Fetching AGVs from local API...');
+            const agvs = await this.fetchFromAPI('agvs');
+            console.log(`✅ Loaded ${agvs.length} AGVs`);
+            await this.saveData(agvs, 'agvs');
+            return agvs;
+        } catch (error) {
+            console.error('❌ Error loading AGVs:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Charger toutes les données nécessaires
+     */
+    async loadAllData() {
+        console.log('🚀 Loading all data from local API...');
+        const [locations, stockItems, agvs] = await Promise.all([
+            this.loadLocations(),
+            this.loadStockItems(),
+            this.loadAGVs()
+        ]);
+
+        return {
+            locations,
+            stockItems,
+            agvs,
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    /**
+     * Mettre à jour un article de stock via l'API locale
+     */
+    async updateStockItem(itemId, updates) {
+        try {
+            const url = `${this.apiBase}/stock_items/${itemId}`;
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Update failed: ${response.status}`);
+            }
+
+            const updated = await response.json();
+            console.log('✅ Stock item updated:', itemId);
+            return updated;
+        } catch (error) {
+            console.error('❌ Error updating stock item:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Mettre à jour un AGV via l'API locale
+     */
+    async updateAGV(agvId, updates) {
+        try {
+            const url = `${this.apiBase}/agvs/${agvId}`;
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Update failed: ${response.status}`);
+            }
+
+            const updated = await response.json();
+            console.log('✅ AGV updated:', agvId);
+            return updated;
+        } catch (error) {
+            console.error('❌ Error updating AGV:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Mettre à jour plusieurs items en batch
+     */
+    async batchUpdateStockItems(items) {
+        try {
+            const url = `${this.apiBase}/batch/stock_items`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(items)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Batch update failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log(`✅ Batch updated ${result.updated} items`);
+            return result;
+        } catch (error) {
+            console.error('❌ Error in batch update:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Mettre à jour plusieurs AGVs en batch
+     */
+    async batchUpdateAGVs(agvs) {
+        try {
+            const url = `${this.apiBase}/batch/agvs`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(agvs)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Batch update failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log(`✅ Batch updated ${result.updated} AGVs`);
+            return result;
+        } catch (error) {
+            console.error('❌ Error in batch update:', error);
+            return null;
+        }
     }
 
     /**
@@ -371,9 +564,5 @@ class DataPipeline {
 }
 
 // Create global instance
-const dataPipeline = new DataPipeline();
-
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = DataPipeline;
-}
+window.dataPipeline = new DataPipeline();
+console.log('✅ Data Pipeline initialized (Architecture Docker complète, API locale)');

@@ -1,6 +1,8 @@
 services:
+  # Base de données PostgreSQL
   db:
     image: postgres:16-alpine
+    container_name: digital_twin_db
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-digital_twin}
       POSTGRES_USER: ${POSTGRES_USER:-digital_twin}
@@ -12,6 +14,54 @@ services:
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./database/seed_data.sql:/docker-entrypoint-initdb.d/02-seed_data.sql
       - ./database/setup_rls_policies.sql:/docker-entrypoint-initdb.d/03-setup_rls_policies.sql
+    networks:
+      - digital_twin_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-digital_twin}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend FastAPI
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: digital_twin_backend
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-digital_twin}
+      POSTGRES_USER: ${POSTGRES_USER:-digital_twin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-digital_twin}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - digital_twin_network
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+  # Frontend Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: digital_twin_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - digital_twin_network
+    restart: unless-stopped
+
+networks:
+  digital_twin_network:
+    driver: bridge
 
 volumes:
   db_data:
