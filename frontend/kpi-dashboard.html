@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI Dashboard - Digital Twin WMS</title>
+    <link rel="stylesheet" href="css/kpi-dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <!-- ═══ HEADER ═══ -->
+    <header class="header">
+        <div class="header-content">
+            <h1>📊 KPI Dashboard</h1>
+            <nav class="header-nav">
+                <a href="index.html" class="nav-link">🏭 Entrepôt 3D</a>
+                <a href="warehouse-2d.html" class="nav-link">🗺️ Vue 2D</a>
+                <a href="stock-analysis.html" class="nav-link">📈 Analyse Stock</a>
+                <a href="kpi-dashboard.html" class="nav-link active">📊 KPI Dashboard</a>
+            </nav>
+            <div class="header-status">
+                <div class="ws-status">
+                    <span class="ws-dot" id="wsIndicator"></span>
+                    <span id="wsText">Déconnecté</span>
+                </div>
+                <span class="last-update" id="lastUpdate">—</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══ MAIN CONTENT ═══ -->
+    <main class="main-content">
+
+        <!-- Summary Bar -->
+        <section class="summary-bar" id="summaryBar">
+            <div class="summary-card green" id="summaryStock">
+                <div class="summary-icon">📦</div>
+                <div class="summary-info">
+                    <div class="summary-value" id="summaryFillRate">—</div>
+                    <div class="summary-label">Taux de remplissage</div>
+                    <div class="summary-trend trend-stable" id="summaryFillTrend">—</div>
+                </div>
+            </div>
+            <div class="summary-card blue" id="summaryAGV">
+                <div class="summary-icon">🤖</div>
+                <div class="summary-info">
+                    <div class="summary-value" id="summaryAGVUtil">—</div>
+                    <div class="summary-label">Utilisation AGV</div>
+                    <div class="summary-trend trend-stable" id="summaryAGVTrend">—</div>
+                </div>
+            </div>
+            <div class="summary-card green" id="summaryWMS">
+                <div class="summary-icon">📋</div>
+                <div class="summary-info">
+                    <div class="summary-value" id="summaryFulfillment">—</div>
+                    <div class="summary-label">Fulfillment Rate</div>
+                    <div class="summary-trend trend-stable" id="summaryWMSTrend">—</div>
+                </div>
+            </div>
+            <div class="summary-card yellow" id="summaryAlerts">
+                <div class="summary-icon">⚠️</div>
+                <div class="summary-info">
+                    <div class="summary-value" id="summaryAlertCount">0</div>
+                    <div class="summary-label">Alertes actives</div>
+                    <div class="summary-trend trend-stable" id="summaryAlertTrend">—</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- KPI Panels (3 columns) -->
+        <section class="kpi-panels">
+
+            <!-- STOCK KPIs -->
+            <div class="kpi-panel" id="panelStock">
+                <div class="panel-header">
+                    <span class="panel-title">📦 Stock KPIs</span>
+                    <span class="panel-badge badge-live">LIVE</span>
+                </div>
+                <div class="panel-body" id="stockKPIs">
+                    <div class="kpi-metric" data-kpi="fill_rate">
+                        <div class="kpi-icon" style="background: var(--success-bg);">📊</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Taux de remplissage</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiStockFillRate">—</span>
+                                <span class="kpi-target">cible: 75-85%</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-green" id="barStockFillRate" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusStockFillRate"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="inventory_accuracy">
+                        <div class="kpi-icon" style="background: var(--info-bg);">🎯</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Précision d'inventaire</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiInventoryAccuracy">—</span>
+                                <span class="kpi-target">cible: >99%</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-green" id="barInventoryAccuracy" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusInventoryAccuracy"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="stockout_rate">
+                        <div class="kpi-icon" style="background: var(--danger-bg);">🚫</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Taux de rupture</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiStockoutRate">—</span>
+                                <span class="kpi-target">cible: <2%</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-green" id="barStockoutRate" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusStockoutRate"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="stock_rotation">
+                        <div class="kpi-icon" style="background: var(--warning-bg);">🔄</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Rotation du stock</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiStockRotation">—</span>
+                                <span class="kpi-target">cible: >12/an</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-blue" id="barStockRotation" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusStockRotation"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="avg_days_in_stock">
+                        <div class="kpi-icon" style="background: var(--success-bg);">📅</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Durée moy. en stock</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiDaysInStock">—</span>
+                                <span class="kpi-target">cible: <30j</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-green" id="barDaysInStock" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusDaysInStock"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AGV KPIs -->
+            <div class="kpi-panel" id="panelAGV">
+                <div class="panel-header">
+                    <span class="panel-title">🤖 AGV KPIs</span>
+                    <span class="panel-badge badge-live">LIVE</span>
+                </div>
+                <div class="panel-body" id="agvKPIs">
+                    <div class="kpi-metric" data-kpi="utilization_rate">
+                        <div class="kpi-icon" style="background: var(--info-bg);">⚡</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Taux d'utilisation</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiAGVUtilization">—</span>
+                                <span class="kpi-target">cible: >80%</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-blue" id="barAGVUtilization" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusAGVUtilization"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="missions_completed">
+                        <div class="kpi-icon" style="background: var(--success-bg);">✅</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Missions complétées</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiMissionsCompleted">—</span>
+                                <span class="kpi-target">cible: >150/shift</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-green" id="barMissionsCompleted" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusMissionsCompleted"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="avg_mission_time">
+                        <div class="kpi-icon" style="background: var(--warning-bg);">⏱️</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Temps moyen / mission</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiAvgMissionTime">—</span>
+                                <span class="kpi-target">cible: <3min</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-yellow" id="barAvgMissionTime" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusAvgMissionTime"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="distance_traveled">
+                        <div class="kpi-icon" style="background: var(--info-bg);">📏</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Distance parcourue</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiDistanceTraveled">—</span>
+                                <span class="kpi-target">total (km)</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-blue" id="barDistanceTraveled" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusDistanceTraveled"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="battery_efficiency">
+                        <div class="kpi-icon" style="background: var(--success-bg);">🔋</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Efficacité batterie</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiBatteryEfficiency">—</span>
+                                <span class="kpi-target">cible: >50 missions</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-green" id="barBatteryEfficiency" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusBatteryEfficiency"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WMS KPIs -->
+            <div class="kpi-panel" id="panelWMS">
+                <div class="panel-header">
+                    <span class="panel-title">📋 WMS KPIs</span>
+                    <span class="panel-badge badge-live">LIVE</span>
+                </div>
+                <div class="panel-body" id="wmsKPIs">
+                    <div class="kpi-metric" data-kpi="lead_time">
+                        <div class="kpi-icon" style="background: var(--warning-bg);">⏳</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Délai de traitement</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiLeadTime">—</span>
+                                <span class="kpi-target">cible: <4h</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-yellow" id="barLeadTime" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusLeadTime"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="throughput">
+                        <div class="kpi-icon" style="background: var(--success-bg);">🚀</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Débit (commandes/h)</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiThroughput">—</span>
+                                <span class="kpi-target">cible: >50/h</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-green" id="barThroughput" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusThroughput"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="order_fulfillment">
+                        <div class="kpi-icon" style="background: var(--info-bg);">📦</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Taux de fulfillment</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiFulfillment">—</span>
+                                <span class="kpi-target">cible: >99%</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-green" id="barFulfillment" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusFulfillment"></div>
+                    </div>
+                    <div class="kpi-metric" data-kpi="picking_accuracy">
+                        <div class="kpi-icon" style="background: var(--success-bg);">🎯</div>
+                        <div class="kpi-details">
+                            <div class="kpi-name">Précision picking</div>
+                            <div class="kpi-value-row">
+                                <span class="kpi-value" id="kpiPickingAccuracy">—</span>
+                                <span class="kpi-target">cible: >99.5%</span>
+                            </div>
+                            <div class="kpi-progress"><div class="kpi-progress-fill progress-green" id="barPickingAccuracy" style="width: 0%"></div></div>
+                        </div>
+                        <div class="kpi-status status-green" id="statusPickingAccuracy"></div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <span class="chart-title">📈 Throughput & Utilisation (historique)</span>
+                    <div class="chart-actions">
+                        <button class="chart-range-btn active" data-hours="24">24h</button>
+                        <button class="chart-range-btn" data-hours="72">3j</button>
+                        <button class="chart-range-btn" data-hours="168">7j</button>
+                    </div>
+                </div>
+                <div class="chart-body">
+                    <canvas id="chartThroughput"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <span class="chart-title">🎯 Répartition Stock</span>
+                </div>
+                <div class="chart-body">
+                    <canvas id="chartStockDistribution"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alerts Section -->
+        <section class="alerts-section">
+            <div class="alerts-header">
+                <span class="alerts-title">
+                    🔔 Alertes & Notifications
+                    <span class="alert-count" id="alertBadge">0</span>
+                </span>
+                <button class="chart-range-btn" id="clearAlerts">Tout effacer</button>
+            </div>
+            <div class="alerts-body" id="alertsList">
+                <div class="alert-item alert-info">
+                    <div class="alert-dot"></div>
+                    <div class="alert-content">
+                        <div class="alert-message">Système en attente de données...</div>
+                        <div class="alert-time">En attente</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/api-config.js"></script>
+    <script src="js/data-pipeline.js"></script>
+    <script src="js/kpi-dashboard.js"></script>
+
+</body>
+</html>
