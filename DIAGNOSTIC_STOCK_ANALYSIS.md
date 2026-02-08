@@ -122,7 +122,7 @@ Vérifier :
 🚀 Initializing Stock Analysis with Data Pipeline
 📦 IndexedDB initialized
 📡 Loading from Supabase...
-Supabase URL: https://kzmukwchzkakldninibv.supabase.co
+Supabase URL: [REDACTED - URL REMOVED FOR SECURITY]
 Supabase key length: 164
 Querying locations...
 Locations result: { count: 60, error: null }
