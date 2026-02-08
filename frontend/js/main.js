@@ -96,22 +96,14 @@ function init() {
 
     // Demo: Start pick-and-ship missions
     setTimeout(() => {
-        if (agvs && agvs.length > 0 && stockItems && stockItems.length > 0) {
-            const agv = agvs[1];
+        if (agvs && agvs.length > 1 && stockItems && stockItems.length > 0) {
+            const agv = agvs[1]; // Use second AGV
             const box = stockItems[0];
             const dropZone = new THREE.Vector3(45, 0, 15);
             
             if (agv && box && taskQueueManager) {
                 console.log('🎬 Starting demo pick-and-ship mission...');
-                // Disable websocket circular demo while main demo runs
-                if (typeof setMainDemoRunning === 'function') setMainDemoRunning(true);
-
-                taskQueueManager.assignPickAndShipMission(agv, box, dropZone).then((ok) => {
-                    console.log(ok ? '✅ Demo mission succeeded' : '⚠️ Demo mission ended');
-                    if (typeof setMainDemoRunning === 'function') setMainDemoRunning(false);
-                }).catch(() => {
-                    if (typeof setMainDemoRunning === 'function') setMainDemoRunning(false);
-                });
+                taskQueueManager.assignPickAndShipMission(agv, box, dropZone);
             }
         }
     }, 2000);

@@ -23,8 +23,9 @@ let demoStatusInterval = null;
 
 // Flag: when true, the main demo (pick-and-ship) is running,
 // so the websocket circular-demo should NOT move AGVs.
-let mainDemoRunning = false;
-function setMainDemoRunning(v) { mainDemoRunning = !!v; }
+// Synced with window.demoRunning used by taskManager.js
+function isMainDemoRunning() { return !!window.demoRunning; }
+function setMainDemoRunning(v) { window.demoRunning = !!v; }
 
 /**
  * Initialize WebSocket connection
@@ -476,7 +477,7 @@ function startDemoMode(agvs, stockItems) {
         simulationTime += 0.1;
 
         // Skip AGV movement if the main demo (pick-and-ship) is active
-        if (!mainDemoRunning) {
+        if (!isMainDemoRunning()) {
             agvs.forEach((agv, index) => {
                 // Only touch IDLE AGVs that aren't on a real task
                 if (agv.status !== AGV_STATUS.IDLE || agv.currentTask) return;
@@ -506,7 +507,7 @@ function startDemoMode(agvs, stockItems) {
 
     // Randomly change IDLE AGV status (only if main demo isn't running)
     demoStatusInterval = setInterval(() => {
-        if (mainDemoRunning) return;
+        if (isMainDemoRunning()) return;
         if (agvs.length > 0) {
             const idleAGVs = agvs.filter(a => a.status === AGV_STATUS.IDLE && !a.currentTask);
             if (idleAGVs.length > 0) {

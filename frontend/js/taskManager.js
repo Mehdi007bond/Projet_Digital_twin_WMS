@@ -87,34 +87,15 @@ class TaskQueueManager {
     constructor(navGrid) {
         this.navGrid = navGrid;
         this.pendingTasks = [];
-        this.activeTasks = new Map();   // taskId -> Task
-        this.completedTasks = [];
+        this.activeTasks = new Map();
         this.agvFleet = [];
-        
-        // Statistics
-        this.stats = {
-            totalTasksCreated: 0,
-            totalTasksCompleted: 0,
-            totalTasksFailed: 0,
-            averageCompletionTime: 0,
-            inboundCount: 0,
-            outboundCount: 0
-        };
-
-        // Simulation settings
-        this.autoGenerateTasks = true;
-        this.taskGenerationInterval = 5000; // ms
+        this.autoGenerateTasks = true; // Set to false if you want only manual demos
         this.lastTaskGeneration = 0;
-
-        console.log('📋 TaskQueueManager initialized');
+        this.taskGenerationInterval = 8000;
     }
 
-    /**
-     * Register AGV fleet
-     */
     registerFleet(agvs) {
         this.agvFleet = agvs;
-        console.log(`📋 Registered ${agvs.length} AGVs with TaskQueueManager`);
     }
 
     /**
@@ -123,7 +104,6 @@ class TaskQueueManager {
     createTask(type, pickupNodeId, dropoffNodeId, itemId = null, priority = TASK_PRIORITY.NORMAL) {
         const task = new Task(type, pickupNodeId, dropoffNodeId, itemId, priority);
         this.pendingTasks.push(task);
-        this.stats.totalTasksCreated++;
 
         // Sort by priority (highest first)
         this.pendingTasks.sort((a, b) => b.priority - a.priority);
@@ -136,6 +116,7 @@ class TaskQueueManager {
      * Create an inbound task (Reception → Storage)
      */
     createInboundTask(itemId = null) {
+        if (!this.navGrid) return null;
         const receptionNode = this.navGrid.findAvailableReceptionNode();
         const storageNode = this.navGrid.findEmptyStorageSlot();
 
@@ -148,22 +129,20 @@ class TaskQueueManager {
             return null;
         }
 
-        const task = this.createTask(
+        return this.createTask(
             TASK_TYPE.INBOUND,
             receptionNode.id,
             storageNode.id,
             itemId || `item_${Date.now()}`,
             TASK_PRIORITY.NORMAL
         );
-
-        this.stats.inboundCount++;
-        return task;
     }
 
     /**
      * Create an outbound task (Storage → Red Zone/Shipping)
      */
     createOutboundTask() {
+        if (!this.navGrid) return null;
         const storageNode = this.navGrid.findOccupiedStorageSlot();
         const redZoneNode = this.navGrid.findAvailableRedZoneNode();
 
@@ -176,42 +155,24 @@ class TaskQueueManager {
             return null;
         }
 
-        const task = this.createTask(
+        return this.createTask(
             TASK_TYPE.OUTBOUND,
             storageNode.id,
             redZoneNode.id,
             storageNode.itemId,
             TASK_PRIORITY.NORMAL
         );
-
-        // Emit event for stock update
-        if (window.stockUpdateCallback) {
-            window.stockUpdateCallback({
-                itemId: storageNode.itemId,
-                status: 'moving',
-                from: 'storage',
-                to: 'red_zone',
-                agvId: null // Will be set when assigned
-            });
-        }
-
-        this.stats.outboundCount++;
-        return task;
     }
 
     /**
-     * Main update loop - dispatch tasks to available AGVs
+     * Main update loop
      */
     update(deltaTime) {
-        // Auto-generate tasks for simulation
-        if (this.autoGenerateTasks) {
+        // Only auto-generate if demo mode is NOT active in main.js
+        if (this.autoGenerateTasks && !window.demoRunning) {
             this.autoGenerateTasksUpdate(deltaTime);
         }
-
-        // Process pending tasks
         this.dispatchTasks();
-
-        // Check for completed tasks
         this.checkTaskCompletion();
     }
 
@@ -221,49 +182,16 @@ class TaskQueueManager {
     dispatchTasks() {
         if (this.pendingTasks.length === 0) return;
 
-        // Find available AGVs
-        const availableAgvs = this.agvFleet.filter(agv => 
-            agv.status === AGV_STATUS.IDLE && 
-            !agv.currentTask &&
-            agv.battery > 20
-        );
-
-        if (availableAgvs.length === 0) return;
-
-        // Assign tasks to nearest AGVs
+        const availableAgvs = this.agvFleet.filter(agv => agv.isAvailable());
+        
         while (this.pendingTasks.length > 0 && availableAgvs.length > 0) {
             const task = this.pendingTasks[0];
-            const pickupNode = this.navGrid.getNode(task.pickupNodeId);
-
-            if (!pickupNode) {
+            const agv = availableAgvs[0]; // Simplification: pick first available
+            
+            if (agv && task) {
+                this.assignTask(task, agv);
                 this.pendingTasks.shift();
-                continue;
-            }
-
-            // Find nearest available AGV to pickup location
-            let nearestAgv = null;
-            let minDistance = Infinity;
-
-            availableAgvs.forEach(agv => {
-                const dist = Math.sqrt(
-                    Math.pow(agv.position.x - pickupNode.x, 2) +
-                    Math.pow(agv.position.z - pickupNode.z, 2)
-                );
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    nearestAgv = agv;
-                }
-            });
-
-            if (nearestAgv) {
-                this.assignTask(task, nearestAgv);
-                this.pendingTasks.shift();
-                
-                // Remove AGV from available list
-                const agvIndex = availableAgvs.indexOf(nearestAgv);
-                if (agvIndex > -1) {
-                    availableAgvs.splice(agvIndex, 1);
-                }
+                availableAgvs.shift();
             } else {
                 break;
             }
@@ -276,12 +204,7 @@ class TaskQueueManager {
     assignTask(task, agv) {
         task.assign(agv.id);
         this.activeTasks.set(task.id, task);
-
-        // Set up AGV mission
-        agv.currentTask = task;
         agv.assignTask(task, this.navGrid);
-
-        console.log(`📋 Task ${task.id} assigned to ${agv.id}`);
     }
 
     /**
@@ -289,28 +212,10 @@ class TaskQueueManager {
      */
     checkTaskCompletion() {
         this.activeTasks.forEach((task, taskId) => {
-            if (task.status === TASK_STATUS.COMPLETED) {
-                this.completedTasks.push(task);
+            if (task.status === 'completed') {
                 this.activeTasks.delete(taskId);
-                this.stats.totalTasksCompleted++;
-                this.updateAverageCompletionTime(task);
-                console.log(`✅ Task ${taskId} completed in ${task.getDuration().toFixed(1)}s`);
-            } else if (task.status === TASK_STATUS.FAILED) {
-                this.activeTasks.delete(taskId);
-                this.stats.totalTasksFailed++;
-                console.log(`❌ Task ${taskId} failed`);
             }
         });
-    }
-
-    /**
-     * Update average completion time statistic
-     */
-    updateAverageCompletionTime(task) {
-        const duration = task.getDuration();
-        const n = this.stats.totalTasksCompleted;
-        this.stats.averageCompletionTime = 
-            ((this.stats.averageCompletionTime * (n - 1)) + duration) / n;
     }
 
     /**
@@ -331,95 +236,43 @@ class TaskQueueManager {
         }
     }
 
-    /**
-     * Get queue statistics
-     */
-    getStats() {
-        return {
-            ...this.stats,
-            pendingCount: this.pendingTasks.length,
-            activeCount: this.activeTasks.size,
-            completedCount: this.completedTasks.length
-        };
-    }
+    // ═══════════════════════════════════════════════════════════════════════
+    // Demo Mission Logic (Uses Promise-based API)
+    // ═══════════════════════════════════════════════════════════════════════
 
-    /**
-     * Mark task as completed
-     */
-    completeTask(taskId) {
-        const task = this.activeTasks.get(taskId);
-        if (task) {
-            task.complete();
-        }
-    }
-
-    /**
-     * Mark task as failed
-     */
-    failTask(taskId) {
-        const task = this.activeTasks.get(taskId);
-        if (task) {
-            task.fail();
-        }
-    }
-
-    /**
-     * Pick and ship mission with promises (async)
-     */
     async assignPickAndShipMission(agv, boxMesh, dropZoneVector) {
-        if (!agv.isAvailable()) {
-            console.warn(`AGV ${agv.id} is not available`);
-            return false;
-        }
+        if (!agv) return;
+        
+        window.demoRunning = true; // Signal to stop auto-generation
+        console.log(`📦 DEMO: Task started for ${agv.id}`);
 
         try {
-            console.log(`📦 Task started for ${agv.id}: Pick from ${boxMesh.position.x.toFixed(1)}, ${boxMesh.position.z.toFixed(1)}`);
-            
-            // Step 1: Move to box
-            console.log(`  → Moving to box...`);
+            // 1. Move to Box
             await agv.moveTo(boxMesh.position);
             
-            // Step 2: Rotate to face box
-            console.log(`  → Rotating to face box...`);
+            // 2. Rotate to face box
             await agv.rotateToFace(boxMesh);
             
-            // Step 3: Loading animation
-            console.log(`  → Loading cargo...`);
+            // 3. Load
             await agv.animateLoading();
-            
-            // Step 4: Attach cargo
-            console.log(`  → Attaching cargo...`);
             agv.attachCargo(boxMesh);
             
-            // Step 5: Move to drop zone
-            console.log(`  → Moving to drop zone (${dropZoneVector.x.toFixed(1)}, ${dropZoneVector.z.toFixed(1)})...`);
+            // 4. Move to Drop Zone
             await agv.moveTo(dropZoneVector);
             
-            // Step 6: Rotate at drop zone
-            const tempDropObj = { position: dropZoneVector };
-            console.log(`  → Rotating at drop zone...`);
-            await agv.rotateToFace(tempDropObj);
-            
-            // Step 7: Unloading animation
-            console.log(`  → Unloading cargo...`);
+            // 5. Unload
             await agv.animateUnloading();
+            agv.detachCargo();
             
-            // Step 8: Detach cargo
-            console.log(`  → Detaching cargo...`);
-            agv.detachCargo(this.navGrid ? this.navGrid.scene : null);
-            
-            // Step 9: Return to IDLE
-            console.log(`  → Returning to IDLE...`);
+            // 6. Return
             await agv.returnToIdle();
+            console.log(`✅ DEMO: Task completed`);
             
-            console.log(`✅ Task completed for ${agv.id}`);
-            return true;
-
-        } catch (error) {
-            console.error(`❌ Task failed for ${agv.id}:`, error);
-            agv.setStatus(AGV_STATUS.IDLE);
-            agv.currentTask = null;
-            return false;
+        } catch (e) {
+            console.error("Demo failed", e);
+            agv.setStatus('error');
+        } finally {
+            window.demoRunning = false;
         }
     }
 }
@@ -432,8 +285,7 @@ let _taskQueueManagerInstance = null;
 
 function getTaskQueueManager() {
     if (!_taskQueueManagerInstance) {
-        const navGrid = getNavigationGrid();
-        _taskQueueManagerInstance = new TaskQueueManager(navGrid);
+        _taskQueueManagerInstance = new TaskQueueManager(window.digitalTwin?.navigationGrid);
     }
     return _taskQueueManagerInstance;
 }
@@ -441,14 +293,5 @@ function getTaskQueueManager() {
 function initializeTaskQueueManager(agvs) {
     const tqm = getTaskQueueManager();
     tqm.registerFleet(agvs);
-    
-    // Pre-populate some storage items for outbound demo
-    const navGrid = getNavigationGrid();
-    navGrid.storageNodes.slice(0, 15).forEach((node, index) => {
-        if (index % 3 === 0) { // Every 3rd slot has an item
-            node.itemId = `initial_item_${index}`;
-        }
-    });
-
     return tqm;
 }
