@@ -120,22 +120,18 @@ WHERE schemaname = 'public'
 ORDER BY tablename, policyname;
 
 -- ==========================================
--- 6. ACTIVER REALTIME SUR LES TABLES
+-- 6. ACTIVER REALTIME SUR LES TABLES (OPTIONNEL)
 -- ==========================================
 
--- Note : Cette partie doit être exécutée dans le dashboard Supabase
--- Aller dans : Database > Replication
--- Activer la réplication pour :
+-- Note : Cette fonctionnalité nécessite Supabase ou une configuration PublicSub
+-- Pour PostgreSQL vanilla, les WebSockets sont gérés par l'application backend
+-- Les tables supportées pour realtime sont :
 -- ✅ agvs
 -- ✅ stock_items
 -- ✅ missions
 -- ✅ locations
 
--- Alternative SQL (si disponible) :
-ALTER PUBLICATION supabase_realtime ADD TABLE agvs;
-ALTER PUBLICATION supabase_realtime ADD TABLE stock_items;
-ALTER PUBLICATION supabase_realtime ADD TABLE missions;
-ALTER PUBLICATION supabase_realtime ADD TABLE locations;
+-- Les politiques créées ci-dessus permettent déjà l'accès public
 
 -- ==========================================
 -- 7. TEST DE CONNEXION
@@ -154,7 +150,6 @@ SELECT
     l.bay_no,
     l.level_no,
     l.occupied,
-    s.product_id,
     s.category,
     s.fill_level
 FROM locations l

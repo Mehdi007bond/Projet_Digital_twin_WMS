@@ -417,7 +417,8 @@ class TaskQueueManager {
 
         } catch (error) {
             console.error(`❌ Task failed for ${agv.id}:`, error);
-            agv.state = 'IDLE';
+            agv.setStatus(AGV_STATUS.IDLE);
+            agv.currentTask = null;
             return false;
         }
     }

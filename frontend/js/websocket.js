@@ -9,7 +9,7 @@ let connectionStatus = 'disconnected';
 let reconnectAttempts = 0;
 let maxReconnectAttempts = 5;
 let reconnectDelay = 3000;
-let demoMode = true; // Start in demo mode for Sprint 1
+let demoMode = false; // Use real backend WebSocket by default
 
 // Supabase realtime
 let supabaseClient = null;
@@ -19,6 +19,12 @@ let kpiRefreshTimeout = null;
 // Demo simulation state
 let demoInterval = null;
 let simulationTime = 0;
+let demoStatusInterval = null;
+
+// Flag: when true, the main demo (pick-and-ship) is running,
+// so the websocket circular-demo should NOT move AGVs.
+let mainDemoRunning = false;
+function setMainDemoRunning(v) { mainDemoRunning = !!v; }
 
 /**
  * Initialize WebSocket connection
@@ -34,12 +40,8 @@ function initWebSocket(agvs, stockItems) {
         return;
     }
 
-    // Start in demo mode for Sprint 1
-    updateConnectionStatus('demo', 'Demo Mode (No Backend)');
-    startDemoMode(agvs, stockItems);
-
-    // Attempt to connect to backend (will fail gracefully in Sprint 1)
-    // attemptConnection(agvs, stockItems);
+    // Connect to Docker backend WebSocket
+    attemptConnection(agvs, stockItems);
 }
 
 function isSupabaseConfigured() {
@@ -472,50 +474,48 @@ function startDemoMode(agvs, stockItems) {
     // Simulate AGV movements
     demoInterval = setInterval(() => {
         simulationTime += 0.1;
-        
-        // Simulate AGV movements (subtle)
-        agvs.forEach((agv, index) => {
-            // Simple circular path for demo
-            const radius = 5;
-            const speed = 0.1 + index * 0.05;
-            const angle = simulationTime * speed + index * (Math.PI * 2 / 3);
-            
-            // Only move if status is 'moving'
-            if (agv.status === AGV_STATUS.MOVING) {
-                agv.position.x = Math.cos(angle) * radius;
-                agv.position.z = Math.sin(angle) * radius;
-                agv.rotation = angle + Math.PI / 2;
-                agv.speed = 1.5;
-            } else {
-                agv.speed = 0;
-            }
-            
-            // Update UI
-            updateAGVCard(agv);
-        });
-        
+
+        // Skip AGV movement if the main demo (pick-and-ship) is active
+        if (!mainDemoRunning) {
+            agvs.forEach((agv, index) => {
+                // Only touch IDLE AGVs that aren't on a real task
+                if (agv.status !== AGV_STATUS.IDLE || agv.currentTask) return;
+
+                // Subtle idle sway so they look alive
+                const swayAmplitude = 0.002;
+                agv.position.x += Math.sin(simulationTime + index) * swayAmplitude;
+                agv.position.z += Math.cos(simulationTime + index * 1.5) * swayAmplitude;
+
+                updateAGVCard(agv);
+            });
+        }
+
         // Occasionally update stock levels
-        if (Math.random() < 0.01) {
+        if (Math.random() < 0.01 && stockItems.length > 0) {
             const randomItem = stockItems[Math.floor(Math.random() * stockItems.length)];
-            const change = Math.random() * 20 - 10; // -10 to +10
+            const change = Math.random() * 20 - 10;
             randomItem.setFillLevel(randomItem.fillLevel + change);
         }
-        
+
         // Update KPIs
         if (simulationTime % 5 < 0.1) {
             updateDemoKPIs(agvs, stockItems);
         }
-        
+
     }, 100); // 100ms update rate
-    
-    // Randomly change AGV status
-    setInterval(() => {
+
+    // Randomly change IDLE AGV status (only if main demo isn't running)
+    demoStatusInterval = setInterval(() => {
+        if (mainDemoRunning) return;
         if (agvs.length > 0) {
-            const randomAGV = agvs[Math.floor(Math.random() * agvs.length)];
-            const statuses = [AGV_STATUS.READY, AGV_STATUS.MOVING, AGV_STATUS.CHARGING];
-            const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
-            randomAGV.setStatus(newStatus);
-            updateAGVCard(randomAGV);
+            const idleAGVs = agvs.filter(a => a.status === AGV_STATUS.IDLE && !a.currentTask);
+            if (idleAGVs.length > 0) {
+                const randomAGV = idleAGVs[Math.floor(Math.random() * idleAGVs.length)];
+                const statuses = [AGV_STATUS.IDLE, AGV_STATUS.CHARGING];
+                const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                randomAGV.setStatus(newStatus);
+                updateAGVCard(randomAGV);
+            }
         }
     }, 10000); // Change every 10 seconds
 }
@@ -527,8 +527,12 @@ function stopDemoMode() {
     if (demoInterval) {
         clearInterval(demoInterval);
         demoInterval = null;
-        console.log('Demo mode stopped');
     }
+    if (demoStatusInterval) {
+        clearInterval(demoStatusInterval);
+        demoStatusInterval = null;
+    }
+    console.log('Demo mode stopped');
 }
 
 /**
@@ -607,8 +611,10 @@ function updateDemoKPIs(agvs, stockItems) {
     // Update AGV utilization
     const utilization = document.getElementById('kpi-utilization');
     if (utilization) {
-        const movingAGVs = agvs.filter(a => a.status === AGV_STATUS.MOVING).length;
-        const util = Math.round((movingAGVs / agvs.length) * 100);
+        const activeAGVs = agvs.filter(a =>
+            a.status !== AGV_STATUS.IDLE && a.status !== AGV_STATUS.CHARGING
+        ).length;
+        const util = agvs.length > 0 ? Math.round((activeAGVs / agvs.length) * 100) : 0;
         utilization.textContent = `${util}%`;
     }
     

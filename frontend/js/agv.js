@@ -1,6 +1,6 @@
 /**
  * Digital Twin WMS - AGV (Automated Guided Vehicle)
- * FSM-based control with navigation grid integration
+ * Unified FSM-based control with navigation grid + Promise-based direct commands
  */
 
 // AGV Status Constants
@@ -10,7 +10,8 @@ const AGV_STATUS = {
     LOADING: 'loading',
     MOVING_TO_DROP: 'moving_to_drop',
     UNLOADING: 'unloading',
-    CHARGING: 'charging'
+    CHARGING: 'charging',
+    MOVING_DIRECT: 'moving_direct'        // Direct moveTo (Promise-based)
 };
 
 const MOVE_PHASE = {
@@ -34,12 +35,18 @@ const STATUS_COLORS = {
     idle: 0x20c997,
     moving_to_pick: 0x4361ee,
     moving_to_drop: 0x4361ee,
+    moving_direct: 0x4361ee,
     loading: 0xe67e22,
     unloading: 0xe67e22,
     charging: 0xf59f00
 };
 
-// AGV Class
+// ═══════════════════════════════════════════════════════════════════════════
+// Unified AGV Class
+// Merges FSM-based navigation (assignTask / navGrid) with Promise-based
+// direct commands (moveTo / rotateToFace) used by the pick-and-ship demo.
+// ═══════════════════════════════════════════════════════════════════════════
+
 class AGV {
     constructor(id, position, status = AGV_STATUS.IDLE) {
         this.id = id;
@@ -54,16 +61,31 @@ class AGV {
         this.targetSpeed = 0;
         this.movePhase = MOVE_PHASE.ARRIVED;
 
+        // FSM-based task (from TaskQueueManager dispatcher)
         this.currentTask = null;
         this.path = [];
         this.pathNodeIds = [];
         this.currentWaypointIndex = 0;
 
+        // Promise-based direct movement
+        this._directTarget = null;          // THREE.Vector3
+        this._directResolve = null;         // resolve() callback
+        this._rotateResolve = null;         // resolve() for rotateToFace
+        this._loadResolve = null;           // resolve() for animateLoading
+        this._unloadResolve = null;         // resolve() for animateUnloading
+
         this.operationTime = 0;
         this.model = null;
         this.statusLED = null;
         this.wheels = [];
+
+        // Cargo reference (for pick-and-ship demo)
+        this._cargoMesh = null;
     }
+
+    // ───────────────────────────────────────
+    //  FSM-based task assignment (navGrid)
+    // ───────────────────────────────────────
 
     assignTask(task, navGrid) {
         this.currentTask = task;
@@ -91,6 +113,108 @@ class AGV {
         }
     }
 
+    // ───────────────────────────────────────
+    //  Promise-based direct commands
+    //  Used by taskManager.assignPickAndShipMission
+    // ───────────────────────────────────────
+
+    /**
+     * Move directly to a target position (Promise-based).
+     * Converts the target into a single-waypoint path so the existing
+     * updateMoving() FSM handles the actual motion.
+     */
+    moveTo(targetPosition) {
+        return new Promise((resolve) => {
+            const target = targetPosition.clone
+                ? targetPosition.clone()
+                : new THREE.Vector3(targetPosition.x, targetPosition.y || this.position.y, targetPosition.z);
+            this.path = [target];
+            this.currentWaypointIndex = 0;
+            this._directTarget = target;
+            this._directResolve = resolve;
+            this.setStatus(AGV_STATUS.MOVING_DIRECT);
+            this.movePhase = MOVE_PHASE.ROTATING;
+        });
+    }
+
+    /**
+     * Rotate to face a target object or position (Promise-based).
+     */
+    rotateToFace(targetObj) {
+        return new Promise((resolve) => {
+            const targetPos = targetObj.position || targetObj;
+            const dx = targetPos.x - this.position.x;
+            const dz = targetPos.z - this.position.z;
+            this.targetRotation = Math.atan2(dx, dz);
+            this._rotateResolve = resolve;
+            this.movePhase = MOVE_PHASE.ROTATING;
+        });
+    }
+
+    /**
+     * Simulate loading animation (Promise-based).
+     */
+    animateLoading() {
+        return new Promise((resolve) => {
+            this.setStatus(AGV_STATUS.LOADING);
+            this.operationTime = MOTION.LOADING_TIME;
+            this._loadResolve = resolve;
+        });
+    }
+
+    /**
+     * Simulate unloading animation (Promise-based).
+     */
+    animateUnloading() {
+        return new Promise((resolve) => {
+            this.setStatus(AGV_STATUS.UNLOADING);
+            this.operationTime = MOTION.LOADING_TIME;
+            this._unloadResolve = resolve;
+        });
+    }
+
+    /**
+     * Attach a cargo mesh to this AGV (visually parent it).
+     */
+    attachCargo(meshOrBox) {
+        this._cargoMesh = meshOrBox;
+        if (meshOrBox && meshOrBox.visible !== undefined) {
+            meshOrBox.visible = false;  // Hide at origin
+        }
+    }
+
+    /**
+     * Detach cargo at the current position.
+     */
+    detachCargo(scene) {
+        if (this._cargoMesh) {
+            if (scene) {
+                this._cargoMesh.position.copy(this.position);
+                this._cargoMesh.position.y = 0;
+                this._cargoMesh.visible = true;
+            }
+            this._cargoMesh = null;
+        }
+    }
+
+    /**
+     * Return to IDLE (Promise-based, resolves immediately).
+     */
+    returnToIdle() {
+        return new Promise((resolve) => {
+            this.setStatus(AGV_STATUS.IDLE);
+            this.currentTask = null;
+            this.path = [];
+            this.currentWaypointIndex = 0;
+            this._directTarget = null;
+            resolve();
+        });
+    }
+
+    // ───────────────────────────────────────
+    //  Main Update Loop (called every frame)
+    // ───────────────────────────────────────
+
     update(deltaTime) {
         if (!this.model) return;
 
@@ -98,6 +222,7 @@ class AGV {
             case AGV_STATUS.IDLE:
                 this.updateIdle(deltaTime);
                 break;
+
             case AGV_STATUS.MOVING_TO_PICK:
             case AGV_STATUS.MOVING_TO_DROP:
                 this.updateMoving(deltaTime);
@@ -111,21 +236,61 @@ class AGV {
                     }
                 }
                 break;
+
+            case AGV_STATUS.MOVING_DIRECT:
+                this.updateMoving(deltaTime);
+                if (this.movePhase === MOVE_PHASE.ARRIVED) {
+                    // Resolve the Promise from moveTo()
+                    this.setStatus(AGV_STATUS.IDLE);
+                    if (this._directResolve) {
+                        const cb = this._directResolve;
+                        this._directResolve = null;
+                        this._directTarget = null;
+                        cb();
+                    }
+                }
+                break;
+
             case AGV_STATUS.LOADING:
                 this.updateLoading(deltaTime);
                 break;
+
             case AGV_STATUS.UNLOADING:
                 this.updateUnloading(deltaTime);
                 break;
+
             case AGV_STATUS.CHARGING:
                 this.updateCharging(deltaTime);
                 break;
+        }
+
+        // Handle standalone rotation promise (rotateToFace without movement)
+        if (this._rotateResolve && this.movePhase === MOVE_PHASE.ROTATING) {
+            let rotationDiff = this.targetRotation - this.rotation;
+            while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
+            while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
+
+            if (Math.abs(rotationDiff) < 0.05) {
+                const cb = this._rotateResolve;
+                this._rotateResolve = null;
+                this.movePhase = MOVE_PHASE.ARRIVED;
+                cb();
+            } else {
+                const step = Math.sign(rotationDiff) *
+                    Math.min(Math.abs(rotationDiff), MOTION.ROTATION_SPEED * deltaTime);
+                this.rotation += step;
+                this.normalizeRotation();
+            }
         }
 
         this.applyMotion(deltaTime);
         this.updateVisuals(deltaTime);
         this.updateBattery(deltaTime);
     }
+
+    // ───────────────────────────────────────
+    //  FSM State Handlers
+    // ───────────────────────────────────────
 
     updateIdle(deltaTime) {
         this.targetSpeed = 0;
@@ -136,6 +301,10 @@ class AGV {
         }
     }
 
+    /**
+     * Unified movement handler.
+     * Works for both path-based (navGrid) and direct-target (moveTo) movement.
+     */
     updateMoving(deltaTime) {
         if (this.path.length === 0 || this.currentWaypointIndex >= this.path.length) {
             this.movePhase = MOVE_PHASE.ARRIVED;
@@ -149,6 +318,7 @@ class AGV {
         const dz = target.z - this.position.z;
         const distance = Math.sqrt(dx * dx + dz * dz);
 
+        // Arrived at waypoint?
         if (distance < MOTION.WAYPOINT_TOLERANCE) {
             this.position.x = target.x;
             this.position.z = target.z;
@@ -164,6 +334,7 @@ class AGV {
             return;
         }
 
+        // Need to rotate first?
         this.targetRotation = Math.atan2(dx, dz);
         let rotationDiff = this.targetRotation - this.rotation;
         while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
@@ -196,7 +367,17 @@ class AGV {
         this.operationTime -= deltaTime;
 
         if (this.operationTime <= 0) {
-            const navGrid = getNavigationGrid();
+            // If a Promise-based load is pending, resolve it
+            if (this._loadResolve) {
+                const cb = this._loadResolve;
+                this._loadResolve = null;
+                this.setStatus(AGV_STATUS.IDLE);
+                cb();
+                return;
+            }
+
+            // FSM-based: proceed to dropoff
+            const navGrid = typeof getNavigationGrid === 'function' ? getNavigationGrid() : null;
             if (this.currentTask && navGrid) {
                 const pickupNode = navGrid.getNode(this.currentTask.pickupNodeId);
                 if (pickupNode && pickupNode.stockItem) {
@@ -212,7 +393,7 @@ class AGV {
     }
 
     startDropoffPhase() {
-        const navGrid = getNavigationGrid();
+        const navGrid = typeof getNavigationGrid === 'function' ? getNavigationGrid() : null;
         if (!this.currentTask || !navGrid) {
             this.completeTask();
             return;
@@ -245,6 +426,16 @@ class AGV {
         this.operationTime -= deltaTime;
 
         if (this.operationTime <= 0) {
+            // If a Promise-based unload is pending, resolve it
+            if (this._unloadResolve) {
+                const cb = this._unloadResolve;
+                this._unloadResolve = null;
+                this.setStatus(AGV_STATUS.IDLE);
+                cb();
+                return;
+            }
+
+            // FSM-based: complete the task
             this.completeTask();
         }
     }
@@ -257,6 +448,11 @@ class AGV {
         this.path = [];
         this.pathNodeIds = [];
         this.currentWaypointIndex = 0;
+        this._directTarget = null;
+        this._directResolve = null;
+        this._rotateResolve = null;
+        this._loadResolve = null;
+        this._unloadResolve = null;
         this.setStatus(AGV_STATUS.IDLE);
     }
 
@@ -268,7 +464,7 @@ class AGV {
     }
 
     goToCharging() {
-        const navGrid = getNavigationGrid();
+        const navGrid = typeof getNavigationGrid === 'function' ? getNavigationGrid() : null;
         if (!navGrid) return;
 
         const currentNode = navGrid.findNearestNode(this.position.x, this.position.z);
@@ -288,6 +484,10 @@ class AGV {
             this.setStatus(AGV_STATUS.CHARGING);
         }
     }
+
+    // ───────────────────────────────────────
+    //  Physics / Visuals
+    // ───────────────────────────────────────
 
     applyMotion(deltaTime) {
         const speedDifference = this.targetSpeed - this.speed;
@@ -356,7 +556,10 @@ class AGV {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
 // Create AGV Fleet
+// ═══════════════════════════════════════════════════════════════════════════
+
 function createAGVs(scene) {
     const agvs = [];
     const initialPositions = [
@@ -365,7 +568,7 @@ function createAGVs(scene) {
         { id: 'AGV-003', pos: new THREE.Vector3(-3, 0.3, 8), status: AGV_STATUS.IDLE, battery: 70 }
     ];
 
-    initialPositions.forEach((config, index) => {
+    initialPositions.forEach((config) => {
         const agv = new AGV(config.id, config.pos, config.status);
         agv.battery = config.battery;
         agv.model = createAGVModel(agv);
@@ -378,7 +581,10 @@ function createAGVs(scene) {
     return agvs;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
 // Create AGV 3D Model
+// ═══════════════════════════════════════════════════════════════════════════
+
 function createAGVModel(agv) {
     const agvGroup = new THREE.Group();
     agvGroup.name = `AGV_${agv.id}`;
@@ -388,9 +594,7 @@ function createAGVModel(agv) {
     const chassisHeight = 0.3;
 
     const chassisMaterial = new THREE.MeshStandardMaterial({
-        color: 0x2a2a2a,
-        roughness: 0.5,
-        metalness: 0.7
+        color: 0x2a2a2a, roughness: 0.5, metalness: 0.7
     });
 
     const chassisGeometry = new THREE.BoxGeometry(chassisWidth, chassisHeight, chassisDepth);
@@ -410,28 +614,28 @@ function createAGVModel(agv) {
     return agvGroup;
 }
 
-// Create Wheels
+// ═══════════════════════════════════════════════════════════════════════════
+// 3D Helpers
+// ═══════════════════════════════════════════════════════════════════════════
+
 function createWheels(group, chassisWidth, chassisDepth, chassisHeight) {
     const wheels = [];
     const wheelRadius = 0.12;
     const wheelWidth = 0.08;
 
     const wheelMaterial = new THREE.MeshStandardMaterial({
-        color: 0x1a1a1a,
-        roughness: 0.8,
-        metalness: 0.2
+        color: 0x1a1a1a, roughness: 0.8, metalness: 0.2
     });
-
     const wheelGeometry = new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelWidth, 8);
 
-    const wheelPositions = [
+    const positions = [
         { x: -chassisWidth / 2 + 0.2, z: -chassisDepth / 2 + 0.15 },
-        { x: -chassisWidth / 2 + 0.2, z: chassisDepth / 2 - 0.15 },
-        { x: chassisWidth / 2 - 0.2, z: -chassisDepth / 2 + 0.15 },
-        { x: chassisWidth / 2 - 0.2, z: chassisDepth / 2 - 0.15 }
+        { x: -chassisWidth / 2 + 0.2, z:  chassisDepth / 2 - 0.15 },
+        { x:  chassisWidth / 2 - 0.2, z: -chassisDepth / 2 + 0.15 },
+        { x:  chassisWidth / 2 - 0.2, z:  chassisDepth / 2 - 0.15 }
     ];
 
-    wheelPositions.forEach(pos => {
+    positions.forEach(pos => {
         const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
         wheel.rotation.z = Math.PI / 2;
         wheel.position.set(pos.x, -chassisHeight / 2, pos.z);
@@ -443,12 +647,9 @@ function createWheels(group, chassisWidth, chassisDepth, chassisHeight) {
     return wheels;
 }
 
-// Create Fork Tines
 function createForkTines(group, chassisWidth, chassisDepth, chassisHeight) {
     const forkMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffcc00,
-        roughness: 0.6,
-        metalness: 0.7
+        color: 0xffcc00, roughness: 0.6, metalness: 0.7
     });
 
     const tineLength = 1.0;
@@ -471,14 +672,10 @@ function createForkTines(group, chassisWidth, chassisDepth, chassisHeight) {
     group.add(carriage);
 }
 
-// Create LIDAR Dome
 function createLidarDome(group, chassisHeight) {
     const lidarMaterial = new THREE.MeshStandardMaterial({
-        color: 0x1a1a1a,
-        roughness: 0.3,
-        metalness: 0.8,
-        transparent: true,
-        opacity: 0.8
+        color: 0x1a1a1a, roughness: 0.3, metalness: 0.8,
+        transparent: true, opacity: 0.8
     });
 
     const lidarGeometry = new THREE.SphereGeometry(0.08, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2);
@@ -493,7 +690,6 @@ function createLidarDome(group, chassisHeight) {
     group.add(sensor);
 }
 
-// Create Sensors
 function createSensors(group, chassisWidth, chassisDepth, chassisHeight) {
     const sensorMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const sensorGeometry = new THREE.SphereGeometry(0.03, 4, 4);
@@ -517,7 +713,6 @@ function createSensors(group, chassisWidth, chassisDepth, chassisHeight) {
     });
 }
 
-// Create Status LED
 function createStatusLED(group, chassisHeight, status) {
     const ledMaterial = new THREE.MeshStandardMaterial({
         color: STATUS_COLORS[status],
@@ -535,7 +730,6 @@ function createStatusLED(group, chassisHeight, status) {
     return led;
 }
 
-// Create Lights
 function createLights(group, chassisWidth, chassisDepth, chassisHeight) {
     const headlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const headlightGeometry = new THREE.CircleGeometry(0.04, 8);
@@ -558,29 +752,26 @@ function createLights(group, chassisWidth, chassisDepth, chassisHeight) {
     });
 }
 
-// Create AGV Label
 function createAGVLabel(group, id, chassisHeight) {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 128;
     const ctx = canvas.getContext('2d');
-    
+
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(0, 0, 256, 128);
-    
+
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 36px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(id, 128, 64);
-    
+
     const texture = new THREE.CanvasTexture(canvas);
     const labelMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide
+        map: texture, transparent: true, side: THREE.DoubleSide
     });
-    
+
     const labelGeometry = new THREE.PlaneGeometry(0.4, 0.2);
     const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
     labelMesh.position.set(0, chassisHeight / 2 + 0.15, 0);
@@ -588,12 +779,14 @@ function createAGVLabel(group, id, chassisHeight) {
     group.add(labelMesh);
 }
 
-// Update All AGVs
+// ═══════════════════════════════════════════════════════════════════════════
+// Global Helpers
+// ═══════════════════════════════════════════════════════════════════════════
+
 function updateAGVs(agvs, deltaTime) {
     agvs.forEach(agv => agv.update(deltaTime));
 }
 
-// Get AGV by ID
 function getAGVById(agvs, id) {
     return agvs.find(agv => agv.id === id);
 }

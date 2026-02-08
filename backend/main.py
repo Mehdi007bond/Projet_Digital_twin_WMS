@@ -527,17 +527,50 @@ async def update_order(order_id: str, status: str):
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     print(f"✅ WebSocket client connected (total: {len(manager.active_connections)})")
-    
+
+    # Send initial handshake so frontend knows the backend is alive
+    await websocket.send_json({
+        "type": "connection_ack",
+        "data": {"status": "connected", "server": "Digital Twin WMS", "timestamp": datetime.now().isoformat()}
+    })
+
     try:
         while True:
             # Receive messages from client
             data = await websocket.receive_text()
             message = json.loads(data)
-            
-            # Echo back or handle specific commands
-            if message.get("type") == "ping":
+            msg_type = message.get("type", "")
+
+            if msg_type == "ping":
                 await websocket.send_json({"type": "pong", "timestamp": datetime.now().isoformat()})
-            
+
+            elif msg_type == "agv_position":
+                # Echo back AGV position to all clients (broadcast)
+                await manager.broadcast({
+                    "type": "agv_position",
+                    "data": message.get("data", {})
+                })
+
+            elif msg_type == "mission_update":
+                await manager.broadcast({
+                    "type": "mission_update",
+                    "data": message.get("data", {})
+                })
+
+            elif msg_type == "stock_update":
+                await manager.broadcast({
+                    "type": "stock_update",
+                    "data": message.get("data", {})
+                })
+
+            else:
+                # Generic echo for unknown message types
+                await websocket.send_json({
+                    "type": "ack",
+                    "original_type": msg_type,
+                    "timestamp": datetime.now().isoformat()
+                })
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         print(f"❌ WebSocket client disconnected (total: {len(manager.active_connections)})")

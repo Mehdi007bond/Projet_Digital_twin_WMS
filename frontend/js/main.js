@@ -103,7 +103,15 @@ function init() {
             
             if (agv && box && taskQueueManager) {
                 console.log('🎬 Starting demo pick-and-ship mission...');
-                taskQueueManager.assignPickAndShipMission(agv, box, dropZone);
+                // Disable websocket circular demo while main demo runs
+                if (typeof setMainDemoRunning === 'function') setMainDemoRunning(true);
+
+                taskQueueManager.assignPickAndShipMission(agv, box, dropZone).then((ok) => {
+                    console.log(ok ? '✅ Demo mission succeeded' : '⚠️ Demo mission ended');
+                    if (typeof setMainDemoRunning === 'function') setMainDemoRunning(false);
+                }).catch(() => {
+                    if (typeof setMainDemoRunning === 'function') setMainDemoRunning(false);
+                });
             }
         }
     }, 2000);
