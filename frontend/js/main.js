@@ -98,12 +98,12 @@ function init() {
     setTimeout(() => {
         if (agvs && agvs.length > 1 && stockItems && stockItems.length > 0) {
             const agv = agvs[1]; // Use second AGV
-            const box = stockItems[0];
+            const stockItem = stockItems[0];
             const dropZone = new THREE.Vector3(45, 0, 15);
             
-            if (agv && box && taskQueueManager) {
+            if (agv && stockItem && stockItem.model && taskQueueManager) {
                 console.log('🎬 Starting demo pick-and-ship mission...');
-                taskQueueManager.assignPickAndShipMission(agv, box, dropZone);
+                taskQueueManager.assignPickAndShipMission(agv, stockItem.model, dropZone);
             }
         }
     }, 2000);
@@ -376,7 +376,7 @@ function setSimulationSpeed(speed) {
  * Update statistics display
  */
 function updateStatsDisplay() {
-    if (!taskQueueManager) return;
+    if (!taskQueueManager || typeof taskQueueManager.getStats !== 'function') return;
     
     const stats = taskQueueManager.getStats();
     

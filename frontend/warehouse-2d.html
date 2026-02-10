@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2D Warehouse Map - Digital Twin WMS</title>
     <link rel="stylesheet" href="css/warehouse-2d.css">
+    
+    <!-- Supabase Realtime (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
+    <script src="js/supabase-config.js"></script>
+    
+    <!-- Demo Sample Data (for offline development) -->
+    <script src="js/sample-data.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -148,8 +155,8 @@
         </div>
     </div>
 
-    <script src="js/data-pipeline.js"></script>
-    <script src="js/virtual-scroller.js"></script>
-    <script src="js/warehouse-2d.js"></script>
+    <script src="js/data-pipeline.js?v=5"></script>
+    <script src="js/virtual-scroller.js?v=2"></script>
+    <script src="js/warehouse-2d.js?v=4"></script>
 </body>
 </html>

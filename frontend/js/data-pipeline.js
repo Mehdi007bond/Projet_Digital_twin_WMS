@@ -16,37 +16,58 @@ class DataPipeline {
     }
 
     /**
-     * Fetch data from local API (remplace Supabase)
+     * Wait for Supabase to be initialized
      */
-    async fetchFromAPI(endpoint, options = {}) {
-        try {
-            const url = `${this.apiBase}/${endpoint}`;
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                }
-            });
+    async waitForSupabase(maxWait = 10000) {
+        const start = Date.now();
+        
+        while (!window.supabaseClient && Date.now() - start < maxWait) {
+            console.log('⏳ Waiting for Supabase to initialize...');
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
 
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
+        if (!window.supabaseClient) {
+            console.error('❌ Supabase failed to initialize after 10 seconds');
+            throw new Error('Supabase initialization timeout');
+        }
+
+        console.log('✅ Supabase ready!');
+        return window.supabaseClient;
+    }
+
+    /**
+     * Fetch data from Supabase (replaces local API)
+     */
+    async fetchFromSupabase(table, options = {}) {
+        try {
+            // CRITICAL: Wait for Supabase to be initialized first!
+            const client = await this.waitForSupabase();
+
+            console.log(`📡 Fetching from Supabase table: ${table}`);
+            const { data, error } = await client
+                .from(table)
+                .select(options.select || '*');
+
+            if (error) {
+                console.error(`❌ Supabase error on ${table}:`, error);
+                throw error;
             }
 
-            return await response.json();
+            console.log(`✅ Fetched ${data?.length || 0} records from ${table}`);
+            return data || [];
         } catch (error) {
-            console.error(`Error fetching ${endpoint}:`, error);
+            console.error(`❌ Error fetching ${table}:`, error.message);
             return [];
         }
     }
 
     /**
-     * Charger les locations depuis l'API locale
+     * Charger les locations depuis Supabase
      */
     async loadLocations() {
         try {
-            console.log('📍 Fetching locations from local API...');
-            const locations = await this.fetchFromAPI('locations');
+            console.log('📍 Fetching locations from Supabase...');
+            const locations = await this.fetchFromSupabase('locations');
             console.log(`✅ Loaded ${locations.length} locations`);
             await this.saveData(locations, 'locations');
             return locations;
@@ -57,12 +78,12 @@ class DataPipeline {
     }
 
     /**
-     * Charger les stock items depuis l'API locale
+     * Charger les stock items depuis Supabase
      */
     async loadStockItems() {
         try {
-            console.log('📦 Fetching stock items from local API...');
-            const stockItems = await this.fetchFromAPI('stock_items');
+            console.log('📦 Fetching stock items from Supabase...');
+            const stockItems = await this.fetchFromSupabase('stock_items');
             console.log(`✅ Loaded ${stockItems.length} stock items`);
             await this.saveData(stockItems, 'stockData');
             return stockItems;
@@ -73,12 +94,12 @@ class DataPipeline {
     }
 
     /**
-     * Charger les AGVs depuis l'API locale
+     * Charger les AGVs depuis Supabase
      */
     async loadAGVs() {
         try {
-            console.log('🤖 Fetching AGVs from local API...');
-            const agvs = await this.fetchFromAPI('agvs');
+            console.log('🤖 Fetching AGVs from Supabase...');
+            const agvs = await this.fetchFromSupabase('agvs');
             console.log(`✅ Loaded ${agvs.length} AGVs`);
             await this.saveData(agvs, 'agvs');
             return agvs;
@@ -92,7 +113,7 @@ class DataPipeline {
      * Charger toutes les données nécessaires
      */
     async loadAllData() {
-        console.log('🚀 Loading all data from local API...');
+        console.log('🚀 Loading all data from Supabase...');
         const [locations, stockItems, agvs] = await Promise.all([
             this.loadLocations(),
             this.loadStockItems(),

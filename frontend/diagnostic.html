@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Diagnostic</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .test-section {
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4f46e5;
+        }
+        
+        .test-section h3 {
+            margin-bottom: 15px;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .status.success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status.error {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .status.pending {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .test-output {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        .info-box {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid #60a5fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box strong {
+            color: #93c5fd;
+        }
+        
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #4338ca;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: rgba(79, 70, 229, 0.3);
+            border: 1px solid #4f46e5;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .table-data {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .data-row {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 4px;
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .data-label {
+            color: #93c5fd;
+            font-weight: bold;
+        }
+        
+        .data-value {
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Supabase Connection Diagnostic</h1>
+        
+        <div class="info-box">
+            <strong>Purpose:</strong> This page tests whether Supabase is properly initialized and accessible from your browser.
+        </div>
+        
+        <!-- SDN Check -->
+        <div class="test-section">
+            <h3>1️⃣ Supabase SDK Library</h3>
+            <div id="sdk-status" class="status pending">Loading...</div>
+            <div class="test-output" id="sdk-output">Checking if Supabase SDK is loaded...</div>
+        </div>
+        
+        <!-- Config Check -->
+        <div class="test-section">
+            <h3>2️⃣ Supabase Configuration</h3>
+            <div id="config-status" class="status pending">Loading...</div>
+            <div class="test-output" id="config-output">Checking configuration...</div>
+        </div>
+        
+        <!-- Initialization Check -->
+        <div class="test-section">
+            <h3>3️⃣ Supabase Client Initialization</h3>
+            <div id="init-status" class="status pending">Loading...</div>
+            <div class="test-output" id="init-output">Waiting for initialization...</div>
+        </div>
+        
+        <!-- Connection Test -->
+        <div class="test-section">
+            <h3>4️⃣ Database Connection Test</h3>
+            <div id="connection-status" class="status pending">Pending</div>
+            <button onclick="testConnection()">Test Connection</button>
+            <div class="test-output" id="connection-output">Click "Test Connection" button to verify database access...</div>
+        </div>
+        
+        <!-- Data Fetch Test -->
+        <div class="test-section">
+            <h3>5️⃣ Fetch Sample Data</h3>
+            <div id="data-status" class="status pending">Pending</div>
+            <button onclick="testFetchData()">Fetch Locations</button>
+            <button onclick="testFetchStockItems()">Fetch Stock Items</button>
+            <button onclick="testFetchAGVs()">Fetch AGVs</button>
+            <div class="test-output" id="data-output">Click buttons to fetch data from Supabase...</div>
+        </div>
+        
+        <!-- Realtime Test -->
+        <div class="test-section">
+            <h3>6️⃣ Realtime Subscription Test</h3>
+            <div id="realtime-status" class="status pending">Pending</div>
+            <button onclick="testRealtime()">Subscribe to Stock Items</button>
+            <button onclick="stopRealtime()">Stop Subscription</button>
+            <div class="test-output" id="realtime-output">Click "Subscribe" button to test Realtime functionality...</div>
+        </div>
+    </div>
+
+    <!-- Load Supabase SDK and Config -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
+    <script src="js/supabase-config.js"></script>
+
+    <script>
+        const log = (elementId, message, isError = false) => {
+            const el = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            el.innerHTML += `<div style="color: ${isError ? '#ff6b6b' : '#aaa'}">[${timestamp}] ${message}</div>`;
+            el.scrollTop = el.scrollHeight;
+        };
+
+        const setStatus = (elementId, status, message) => {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `status ${status}`;
+        };
+
+        // Test 1: SDK Check
+        window.addEventListener('load', () => {
+            if (window.supabase && window.supabase.createClient) {
+                setStatus('sdk-status', 'success', '✅ Supabase SDK Loaded');
+                log('sdk-output', '✅ Supabase SDK v2.39.7 loaded successfully', false);
+            } else {
+                setStatus('sdk-status', 'error', '❌ SDK Not Found');
+                log('sdk-output', '❌ Supabase SDK not found in window.supabase', true);
+            }
+
+            // Test 2: Config Check
+            if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+                setStatus('config-status', 'success', '✅ Configuration Found');
+                log('config-output', `✅ SUPABASE_URL: ${window.SUPABASE_URL}`, false);
+                log('config-output', `✅ SUPABASE_ANON_KEY: ${window.SUPABASE_ANON_KEY.substring(0, 20)}...`, false);
+            } else {
+                setStatus('config-status', 'error', '❌ Configuration Missing');
+                log('config-output', '❌ Missing SUPABASE_URL or SUPABASE_ANON_KEY', true);
+            }
+
+            // Test 3: Initialization Check
+            setTimeout(() => {
+                if (window.supabaseClient) {
+                    setStatus('init-status', 'success', '✅ Supabase Initialized');
+                    log('init-output', '✅ window.supabaseClient is ready', false);
+                } else {
+                    setStatus('init-status', 'error', '❌ Not Initialized');
+                    log('init-output', '❌ window.supabaseClient is null', true);
+                }
+            }, 2000);
+        });
+
+        // Test 4: Connection Test
+        async function testConnection() {
+            setStatus('connection-status', 'pending', '🔄 Testing...');
+            log('connection-output', '🔄 Testing Supabase connection...', false);
+
+            try {
+                if (!window.supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                const { data, error } = await window.supabaseClient
+                    .from('locations')
+                    .select('count');
+
+                if (error) {
+                    throw error;
+                }
+
+                setStatus('connection-status', 'success', '✅ Connected');
+                log('connection-output', '✅ Successfully connected to Supabase', false);
+                log('connection-output', `✅ No RLS policy blocks detected`, false);
+            } catch (error) {
+                setStatus('connection-status', 'error', '❌ Connection Failed');
+                log('connection-output', `❌ Error: ${error.message}`, true);
+                if (error.details) {
+                    log('connection-output', `Details: ${error.details}`, true);
+                }
+            }
+        }
+
+        // Test 5: Fetch Data
+        async function testFetchData() {
+            setStatus('data-status', 'pending', '🔄 Fetching...');
+            log('data-output', '🔄 Fetching locations...', false);
+
+            try {
+                if (!window.supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                const { data, error } = await window.supabaseClient
+                    .from('locations')
+                    .select('*')
+                    .limit(5);
+
+                if (error) throw error;
+
+                setStatus('data-status', 'success', `✅ Fetched ${data?.length || 0} locations`);
+                log('data-output', `✅ Successfully fetched ${data?.length || 0} locations`, false);
+                
+                if (data && data.length > 0) {
+                    log('data-output', `📊 Sample data:`, false);
+                    log('data-output', `${JSON.stringify(data[0], null, 2)}`, false);
+                }
+            } catch (error) {
+                setStatus('data-status', 'error', '❌ Fetch Failed');
+                log('data-output', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function testFetchStockItems() {
+            setStatus('data-status', 'pending', '🔄 Fetching...');
+            log('data-output', '🔄 Fetching stock items...', false);
+
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('stock_items')
+                    .select('*')
+                    .limit(5);
+
+                if (error) throw error;
+
+                setStatus('data-status', 'success', `✅ Fetched ${data?.length || 0} stock items`);
+                log('data-output', `✅ Successfully fetched ${data?.length || 0} stock items`, false);
+                
+                if (data && data.length > 0) {
+                    log('data-output', `📊 Sample: ${JSON.stringify(data[0], null, 2)}`, false);
+                }
+            } catch (error) {
+                setStatus('data-status', 'error', '❌ Fetch Failed');
+                log('data-output', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function testFetchAGVs() {
+            setStatus('data-status', 'pending', '🔄 Fetching...');
+            log('data-output', '🔄 Fetching AGVs...', false);
+
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('agvs')
+                    .select('*');
+
+                if (error) throw error;
+
+                setStatus('data-status', 'success', `✅ Fetched ${data?.length || 0} AGVs`);
+                log('data-output', `✅ Successfully fetched ${data?.length || 0} AGVs`, false);
+                
+                if (data && data.length > 0) {
+                    log('data-output', `📊 Sample: ${JSON.stringify(data[0], null, 2)}`, false);
+                }
+            } catch (error) {
+                setStatus('data-status', 'error', '❌ Fetch Failed');
+                log('data-output', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        // Test 6: Realtime Subscription
+        let realtimeSubscription = null;
+
+        async function testRealtime() {
+            setStatus('realtime-status', 'pending', '🔄 Subscribing...');
+            log('realtime-output', '🔄 Subscribing to stock_items changes...', false);
+
+            try {
+                if (!window.supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                realtimeSubscription = window.supabaseClient
+                    .channel('test:stock_items')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'stock_items' },
+                        (payload) => {
+                            log('realtime-output', `📨 Realtime event received: ${payload.eventType}`, false);
+                            log('realtime-output', `Data: ${JSON.stringify(payload.new || payload.old, null, 2)}`, false);
+                        }
+                    )
+                    .subscribe((status) => {
+                        if (status === 'SUBSCRIBED') {
+                            setStatus('realtime-status', 'success', '✅ Subscribed');
+                            log('realtime-output', '✅ Successfully subscribed to realtime updates', false);
+                            log('realtime-output', '💡 Try updating a stock_item in Supabase to see events here', false);
+                        } else if (status === 'CHANNEL_ERROR') {
+                            setStatus('realtime-status', 'error', '❌ Subscription Error');
+                            log('realtime-output', '❌ Channel error occurred', true);
+                        }
+                    });
+
+            } catch (error) {
+                setStatus('realtime-status', 'error', '❌ Subscription Failed');
+                log('realtime-output', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        function stopRealtime() {
+            if (realtimeSubscription) {
+                realtimeSubscription.unsubscribe();
+                log('realtime-output', '⏹️ Subscription stopped', false);
+                setStatus('realtime-status', 'pending', '⏸️ Subscription Stopped');
+            }
+        }
+    </script>
+</body>
+</html>

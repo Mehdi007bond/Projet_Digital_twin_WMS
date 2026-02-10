@@ -27,21 +27,26 @@ let performanceMetrics = {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 Initializing Warehouse 2D with Data Pipeline');
+    console.log('🚀 Initializing Warehouse 2D with Supabase');
     
     // Initialize data pipeline
     await dataPipeline.initDB();
     
-    // Try to load existing data from IndexedDB
-    const existingData = await dataPipeline.loadData('stockData');
+    // Load data from Supabase
+    await loadWarehouseDataFromSupabase();
     
-    if (existingData && existingData.length > 0) {
-        warehouseData = existingData;
-        filteredData = [...warehouseData];
-        console.log(`✅ Loaded ${warehouseData.length} items from database`);
+    // CRITICAL: Wait for Supabase before enabling realtime
+    let attempt = 0;
+    while (!window.supabaseClient && attempt < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempt++;
+    }
+    
+    if (window.supabaseClient) {
+        console.log('[2D] ✅ Supabase ready, enabling real-time updates');
+        connectRealtimeUpdates();
     } else {
-        // Generate sample data if no data exists
-        await generateSampleData();
+        console.warn('[2D] ⚠️ Supabase not available, real-time disabled');
     }
     
     initializeEventListeners();
@@ -49,6 +54,135 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderWarehouse();
     displayPerformanceMetrics();
 });
+
+// Load warehouse data from Supabase
+async function loadWarehouseDataFromSupabase() {
+    try {
+        console.log('📡 Loading data from Supabase...');
+        
+        const locations = await dataPipeline.loadLocations();
+        const stockItems = await dataPipeline.loadStockItems();
+        
+        if (locations && locations.length > 0) {
+            // Map Supabase data to warehouse format
+            warehouseData = locations.map(loc => {
+                const stock = stockItems?.find(s => s.location_id === loc.id);
+                const fillLevel = stock?.fill_level || 0;
+                
+                return {
+                    id: loc.id,
+                    aisle: loc.row_no,
+                    rack: loc.bay_no,
+                    level: loc.level_no,
+                    position: `A${loc.row_no}R${loc.bay_no}L${loc.level_no}`,
+                    category: stock?.category || 'C',
+                    sku: stock?.id?.substring(0, 8) || '-',
+                    fillLevel: fillLevel,
+                    occupied: fillLevel > 0,
+                    status: fillLevel === 0 ? 'empty' : fillLevel < 25 ? 'low' : fillLevel < 75 ? 'medium' : fillLevel < 90 ? 'good' : 'full'
+                };
+            });
+            
+            filteredData = [...warehouseData];
+            console.log(`✅ Loaded ${warehouseData.length} locations from Supabase`);
+            
+            // Save to IndexedDB cache
+            await dataPipeline.saveData(warehouseData, 'stockData');
+        } else {
+            console.warn('⚠️ No locations found, generating sample data');
+            await generateSampleData();
+        }
+    } catch (error) {
+        console.error('❌ Error loading from Supabase:', error);
+        
+        // Try IndexedDB cache
+        const existingData = await dataPipeline.loadData('stockData');
+        if (existingData && existingData.length > 0) {
+            warehouseData = existingData;
+            filteredData = [...warehouseData];
+            console.log(`✅ Loaded ${warehouseData.length} items from IndexedDB cache`);
+        } else {
+            await generateSampleData();
+        }
+    }
+}
+
+// Connect to Supabase Realtime updates for live warehouse map
+function connectRealtimeUpdates() {
+    try {
+        if (!window.supabaseClient) {
+            console.warn('[2D] Supabase not available for realtime');
+            return;
+        }
+        
+        console.log('[2D] ✅ Subscribing to Supabase Realtime updates');
+        
+        // Subscribe to stock_items changes - RELOAD ALL DATA on any change
+        window.supabaseClient
+            .channel('warehouse2d:stock_items')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'stock_items' },
+                (payload) => {
+                    console.log('[2D] 📨 Real-time event received:', payload.eventType, payload.new);
+                    // On any change, reload all data to stay in sync
+                    loadWarehouseDataFromSupabase().then(() => {
+                        renderWarehouse();
+                        updateStatistics();
+                        console.log('[2D] ✅ Warehouse 2D updated');
+                    });
+                }
+            )
+            .subscribe((status) => {
+                console.log('[2D] Realtime subscription status:', status);
+            });
+            
+        // Subscribe to locations changes
+        window.supabaseClient
+            .channel('warehouse2d:locations')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'locations' },
+                (payload) => {
+                    console.log('[2D] Location change detected, reloading...');
+                    loadWarehouseDataFromSupabase().then(() => {
+                        renderWarehouse();
+                        updateStatistics();
+                    });
+                }
+            )
+            .subscribe();
+            
+    } catch (err) {
+        console.error('[2D] ❌ Realtime subscription failed:', err);
+    }
+}
+
+// Update a single warehouse item from Supabase change
+function updateWarehouseItem(payload) {
+    const { record } = payload;
+    if (!record || !record.location_id) return;
+    
+    // Find and update the item in warehouseData
+    const item = warehouseData.find(w => w.id === record.location_id);
+    if (item) {
+        item.fillLevel = record.fill_level || 0;
+        item.occupied = item.fillLevel > 0;
+        item.status = item.fillLevel === 0 ? 'empty' : 
+                      item.fillLevel < 25 ? 'low' : 
+                      item.fillLevel < 75 ? 'medium' : 
+                      item.fillLevel < 90 ? 'good' : 'full';
+        item.category = record.category || item.category;
+        
+        // Update filtered data if item matches current filters
+        const filteredItem = filteredData.find(w => w.id === record.location_id);
+        if (filteredItem) {
+            Object.assign(filteredItem, item);
+        }
+        
+        // Re-render affected cells
+        renderWarehouse();
+        updateStatistics();
+    }
+}
 
 // Initialize all event listeners
 function initializeEventListeners() {

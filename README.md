@@ -1,65 +1,21 @@
-<div align="center">
+# 🏭 Digital Twin WMS - Supabase Realtime Edition
 
-```
-██████╗ ██╗ ██████╗ ██╗████████╗ █████╗ ██╗         ████████╗██╗    ██╗██╗███╗   ██╗
-██╔══██╗██║██╔════╝ ██║╚══██╔══╝██╔══██╗██║         ╚══██╔══╝██║    ██║██║████╗  ██║
-██║  ██║██║██║  ███╗██║   ██║   ███████║██║            ██║   ██║ █╗ ██║██║██╔██╗ ██║
-██║  ██║██║██║   ██║██║   ██║   ██╔══██║██║            ██║   ██║███╗██║██║██║╚██╗██║
-██████╔╝██║╚██████╔╝██║   ██║   ██║  ██║███████╗       ██║   ╚███╔███╔╝██║██║ ╚████║
-╚═════╝ ╚═╝ ╚═════╝ ╚═╝   ╚═╝   ╚═╝  ╚═╝╚══════╝       ╚═╝    ╚══╝╚══╝ ╚═╝╚═╝  ╚═══╝
-                                                                                     
-██╗    ██╗███╗   ███╗███████╗
-██║    ██║████╗ ████║██╔════╝
-██║ █╗ ██║██╔████╔██║███████╗
-██║███╗██║██║╚██╔╝██║╚════██║
-╚███╔███╔╝██║ ╚═╝ ██║███████║
- ╚══╝╚══╝ ╚═╝     ╚═╝╚══════╝
-```
+### *Real-time 3D Warehouse Visualization with Supabase Realtime*
 
-# 🏭 Digital Twin for Warehouse Management System
-
-### *Real-time 3D visualization of warehouse operations with AGV fleet management*
-
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)](https://github.com/Mehdi007bond/Projet_Digital_twin_WMS)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue?style=for-the-badge)](https://github.com/Mehdi007bond/Projet_Digital_twin_WMS)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge)](https://github.com/Mehdi007bond/Projet_Digital_twin_WMS)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
+[![Supabase](https://img.shields.io/badge/Supabase-Realtime-4FC3F7?style=for-the-badge)](https://supabase.com)
 [![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
-[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 
 ---
 
-**🇬🇧 English** | **🇫🇷 Français**
+## ✨ What's New (v2.0)
 
-*A comprehensive Digital Twin solution for modern warehouse management, featuring real-time 3D visualization, AGV fleet control, and advanced KPI tracking.*
-
-*Une solution complète de Jumeau Numérique pour la gestion d'entrepôt moderne, avec visualisation 3D en temps réel, contrôle de flotte AGV et suivi avancé des KPIs.*
-
----
-
-[🚀 Getting Started](#-getting-started) •
-[📖 Documentation](#-documentation) •
-[🎮 Demo](#-demo) •
-[📊 KPIs](#-kpis--metrics) •
-[🤝 Contributing](#-contributing)
-
-</div>
-
----
-
----
-
-## 🚨 IMPORTANT: Architecture Complètement Migrée vers Docker
-
-**Cette section du README contient des références historiques à Supabase.**
-
-**➡️ Pour la documentation complète et à jour, consultez :** [**ARCHITECTURE_DOCKER_COMPLETE.md**](ARCHITECTURE_DOCKER_COMPLETE.md)
-
-**Changements majeurs:**
-- ✅ Docker Compose 100% (PostgreSQL, FastAPI, Nginx)
-- ✅ Zéro dépendance cloud Supabase
-- ✅ API complète en FastAPI avec WebSocket
-- ✅ Frontend migré vers api-config.js
+- ✅ **100% Supabase Realtime** - No Docker backend needed
+- ✅ **Auto-scaling** - Managed cloud infrastructure
+- ✅ **Zero maintenance** - Focus on features, not ops
+- ✅ **Multi-region ready** - Global deployment
+- ✅ **< 100ms latency** - Production-grade performance
 
 ---
 

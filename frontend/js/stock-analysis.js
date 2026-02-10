@@ -12,12 +12,27 @@ let virtualScroller = null;
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 Initializing Stock Analysis (API Docker locale)');
+    console.log('🚀 Initializing Stock Analysis with Supabase');
     
     // Initialize data pipeline
     await dataPipeline.initDB();
     
     await loadStockData();
+    
+    // CRITICAL: Wait for Supabase before enabling realtime
+    let attempt = 0;
+    while (!window.supabaseClient && attempt < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempt++;
+    }
+    
+    if (window.supabaseClient) {
+        console.log('[StockAnalysis] ✅ Supabase ready, enabling real-time updates');
+        connectRealtimeUpdates();
+    } else {
+        console.warn('[StockAnalysis] ⚠️ Supabase not available, real-time disabled');
+    }
+    
     initializeCharts();
     setupEventListeners();
     updateDisplay();
@@ -85,6 +100,66 @@ async function loadStockData() {
         stockData = generateSampleStockData();
         filteredData = [...stockData];
         await dataPipeline.saveData(stockData, 'stockData');
+    }
+}
+
+// Connect to Supabase Realtime updates for live stock analysis
+function connectRealtimeUpdates() {
+    try {
+        if (!window.supabaseClient) {
+            console.warn('[StockAnalysis] Supabase not available for realtime');
+            return;
+        }
+        
+        console.log('[StockAnalysis] ✅ Subscribing to Supabase Realtime updates');
+        
+        // Subscribe to stock_items changes - RELOAD ALL DATA on any change
+        window.supabaseClient
+            .channel('stockanalysis:stock_items')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'stock_items' },
+                (payload) => {
+                    console.log('[StockAnalysis] 📨 Real-time event received:', payload.eventType);
+                    // Reload all stock data to keep synchronized
+                    loadStockData().then(() => {
+                        updateDisplay();
+                        console.log('[StockAnalysis] ✅ Table updated');
+                    });
+                }
+            )
+            .subscribe((status) => {
+                console.log('[StockAnalysis] Realtime subscription status:', status);
+            });
+            
+    } catch (err) {
+        console.error('[StockAnalysis] ❌ Realtime subscription failed:', err);
+    }
+}
+
+// Update a single stock item from Supabase change
+function updateStockItem(payload) {
+    const { record } = payload;
+    if (!record || !record.location_id) return;
+    
+    // Find and update the item in stockData
+    const item = stockData.find(s => s.id === record.location_id);
+    if (item) {
+        item.fillLevel = record.fill_level || 0;
+        item.occupied = item.fillLevel > 0;
+        item.status = !record || item.fillLevel === 0 ? 'Vide' : 
+                      item.fillLevel < 25 ? 'Faible' : 
+                      item.fillLevel < 75 ? 'Moyen' : 
+                      item.fillLevel < 90 ? 'Bon' : 'Plein';
+        item.category = record.category || item.category;
+        
+        // Update filtered data if item matches current filters
+        const filteredItem = filteredData.find(s => s.id === record.location_id);
+        if (filteredItem) {
+            Object.assign(filteredItem, item);
+        }
+        
+        // Refresh table and charts
+        updateDisplay();
     }
 }
 

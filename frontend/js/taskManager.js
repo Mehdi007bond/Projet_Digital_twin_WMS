@@ -98,6 +98,14 @@ class TaskQueueManager {
         this.agvFleet = agvs;
     }
 
+    getStats() {
+        return {
+            activeTasks: this.activeTasks.size,
+            pendingTasks: this.pendingTasks.length,
+            completedTasks: 0 // TODO: Track completed tasks
+        };
+    }
+
     /**
      * Create and queue a new task
      */

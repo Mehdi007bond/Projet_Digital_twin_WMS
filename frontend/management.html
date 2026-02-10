@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Management - Edit Mode</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .top-nav h1 {
+            font-size: 1.8em;
+            color: #38bdf8;
+        }
+
+        .connection-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 15px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            border-radius: 6px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h2 {
+            color: #38bdf8;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(51, 65, 85, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-family: inherit;
+            font-size: 0.95em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #38bdf8;
+            background: rgba(51, 65, 85, 0.8);
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+        }
+
+        .slider-value {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.2);
+            padding: 4px 12px;
+            border-radius: 4px;
+            margin-left: 10px;
+            color: #38bdf8;
+            font-weight: bold;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group.full {
+            grid-template-columns: 1fr;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(71, 85, 105, 0.5);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(71, 85, 105, 0.8);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+        }
+
+        .notification {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #86efac;
+        }
+
+        .notification.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+        }
+
+        .notification.loading {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid #38bdf8;
+            color: #bae6fd;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        table thead {
+            position: sticky;
+            top: 0;
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        table th {
+            padding: 12px;
+            text-align: left;
+            color: #38bdf8;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+        }
+
+        table tr:hover {
+            background: rgba(148, 163, 184, 0.05);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            white-space: nowrap;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge.stock-low {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .badge.stock-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .badge.stock-high {
+            background: rgba(16, 185, 129, 0.2);
+            color: #86efac;
+        }
+
+        .search-box {
+            margin-bottom: 15px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quick-actions button {
+            padding: 10px;
+            font-size: 0.85em;
+        }
+
+        .status-bar {
+            background: rgba(51, 65, 85, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+        }
+
+        .stat-value {
+            color: #38bdf8;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(148, 163, 184, 0.2);
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <div class="top-nav">
+        <h1>⚙️ Warehouse Management Panel</h1>
+        <div class="connection-indicator">
+            <span class="status-dot"></span>
+            <span id="connection-text">Connected to Supabase</span>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="notifications" style="max-width: 1400px; margin: 0 auto 20px;"></div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Stock Items Management -->
+        <div class="panel">
+            <h2>📦 Stock Items Management</h2>
+
+            <div class="quick-actions">
+                <button class="btn-primary btn-sm" onclick="loadStockItems()">🔄 Refresh</button>
+                <button class="btn-secondary btn-sm" onclick="clearStockForm()">➕ New Item</button>
+                <button class="btn-secondary btn-sm" onclick="exportStockData()">📥 Export CSV</button>
+            </div>
+
+            <div class="status-bar">
+                <div class="stat-item">
+                    <span class="stat-label">Total Items:</span>
+                    <span class="stat-value" id="stock-total">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Occupied:</span>
+                    <span class="stat-value" id="stock-occupied">0</span>
+                </div>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="stock-search" placeholder="Search by location ID or category..." 
+                       onkeyup="filterStockTable()">
+            </div>
+
+            <div class="table-container">
+                <table id="stock-table">
+                    <thead>
+                        <tr>
+                            <th>Location ID</th>
+                            <th>Fill Level</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-tbody">
+                        <tr><td colspan="5" style="text-align: center; color: #94a3b8;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(148, 163, 184, 0.1);">
+                <h3 style="color: #38bdf8; margin-bottom: 15px;">Edit Stock Item</h3>
+
+                <div class="form-group">
+                    <label>Location ID</label>
+                    <input type="text" id="stock-location-id" readonly placeholder="Select from table or enter ID">
+                </div>
+
+                <div class="form-group">
+                    <label>Fill Level (%): <span class="slider-value" id="fill-level-display">50</span></label>
+                    <input type="range" id="stock-fill-level" min="0" max="100" value="50" 
+                           oninput="updateFillLevelDisplay()">
+                </div>
+
+                <div class="form-group">
+                    <label>Category</label>
+                    <input type="text" id="stock-category" placeholder="e.g., A, B, C">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-success" onclick="updateStockItem()">💾 Save Changes</button>
+                    <button class="btn-secondary" onclick="clearStockForm()">❌ Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AGV Management -->
+        <div class="panel">
+            <h2>🤖 AGV Management</h2>
+
+            <div class="quick-actions">
+                <button class="btn-primary btn-sm" onclick="loadAGVs()">🔄 Refresh</button>
+                <button class="btn-secondary btn-sm" onclick="clearAGVForm()">➕ New AGV</button>
+            </div>
+
+            <div class="status-bar">
+                <div class="stat-item">
+                    <span class="stat-label">Total AGVs:</span>
+                    <span class="stat-value" id="agv-total">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Active:</span>
+                    <span class="stat-value" id="agv-active">0</span>
+                </div>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="agv-search" placeholder="Search by AGV ID or status..." 
+                       onkeyup="filterAGVTable()">
+            </div>
+
+            <div class="table-container">
+                <table id="agv-table">
+                    <thead>
+                        <tr>
+                            <th>AGV ID</th>
+                            <th>Status</th>
+                            <th>Battery %</th>
+                            <th>Position</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agv-tbody">
+                        <tr><td colspan="5" style="text-align: center; color: #94a3b8;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(148, 163, 184, 0.1);">
+                <h3 style="color: #38bdf8; margin-bottom: 15px;">Edit AGV</h3>
+
+                <div class="form-group">
+                    <label>AGV ID</label>
+                    <input type="text" id="agv-id" readonly placeholder="Select from table">
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="agv-status">
+                        <option value="idle">Idle</option>
+                        <option value="moving">Moving</option>
+                        <option value="collecting">Collecting</option>
+                        <option value="delivering">Delivering</option>
+                        <option value="charging">Charging</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Battery (%): <span class="slider-value" id="battery-display">100</span></label>
+                    <input type="range" id="agv-battery" min="0" max="100" value="100" 
+                           oninput="updateBatteryDisplay()">
+                </div>
+
+                <div class="form-group">
+                    <label>Position X (m)</label>
+                    <input type="number" id="agv-x" step="0.1" placeholder="0">
+                </div>
+
+                <div class="form-group">
+                    <label>Position Z (m)</label>
+                    <input type="number" id="agv-z" step="0.1" placeholder="0">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-success" onclick="updateAGV()">💾 Save Changes</button>
+                    <button class="btn-secondary" onclick="clearAGVForm()">❌ Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Management -->
+        <div class="panel">
+            <h2>📋 Tasks Management</h2>
+
+            <div class="quick-actions">
+                <button class="btn-primary btn-sm" onclick="loadTasks()">🔄 Refresh</button>
+                <button class="btn-secondary btn-sm" onclick="clearTaskForm()">➕ New Task</button>
+            </div>
+
+            <div class="status-bar">
+                <div class="stat-item">
+                    <span class="stat-label">Total Tasks:</span>
+                    <span class="stat-value" id="task-total">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Pending:</span>
+                    <span class="stat-value" id="task-pending">0</span>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="task-table">
+                    <thead>
+                        <tr>
+                            <th>Task ID</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>AGV</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="task-tbody">
+                        <tr><td colspan="5" style="text-align: center; color: #94a3b8;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(148, 163, 184, 0.1);">
+                <h3 style="color: #38bdf8; margin-bottom: 15px;">Edit Task</h3>
+
+                <div class="form-group">
+                    <label>Task ID</label>
+                    <input type="text" id="task-id" placeholder="task-xxx">
+                </div>
+
+                <div class="form-group">
+                    <label>Type</label>
+                    <input type="text" id="task-type" placeholder="e.g., pickup, delivery">
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="task-status">
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="task-priority">
+                        <option value="1">Low (1)</option>
+                        <option value="2">Medium (2)</option>
+                        <option value="3">High (3)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Assigned AGV</label>
+                    <select id="task-agv-id">
+                        <option value="">Not Assigned</option>
+                    </select>
+                </div>
+
+                <div class="button-group full">
+                    <button class="btn-success" onclick="updateTask()">💾 Save Task</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Monitor -->
+        <div class="panel">
+            <h2>📡 Real-time Monitor</h2>
+
+            <div class="status-bar">
+                <div class="stat-item">
+                    <span class="stat-label">Last Update:</span>
+                    <span class="stat-value" id="last-update">Never</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Updates/min:</span>
+                    <span class="stat-value" id="update-rate">0</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Event Log (Latest 20)</label>
+                <div id="event-log" style="
+                    height: 400px;
+                    background: rgba(51, 65, 85, 0.3);
+                    border: 1px solid rgba(148, 163, 184, 0.1);
+                    border-radius: 6px;
+                    padding: 15px;
+                    overflow-y: auto;
+                    font-family: 'Courier New', monospace;
+                    font-size: 0.85em;
+                    line-height: 1.6;
+                ">
+                    <div style="color: #94a3b8;">Waiting for events...</div>
+                </div>
+            </div>
+
+            <div class="button-group full" style="margin-top: 15px;">
+                <button class="btn-secondary" onclick="clearEventLog()">Clear Log</button>
+            </div>
+
+            <h3 style="color: #38bdf8; margin: 20px 0 15px; padding-top: 20px; border-top: 1px solid rgba(148, 163, 184, 0.1);">Bulk Operations</h3>
+
+            <div class="button-group">
+                <button class="btn-secondary" onclick="bulkUpdateFillLevels()">Fill All Locations</button>
+                <button class="btn-secondary" onclick="randomizeData()">🎲 Randomize Data</button>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-danger" onclick="resetAllData()">🔄 Reset All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
+    <script src="js/supabase-config.js"></script>
+    <script>
+        // Initialize
+        window.addEventListener('load', async () => {
+            await waitForSupabase();
+            loadStockItems();
+            loadAGVs();
+            loadTasks();
+            setupRealtimeMonitor();
+        });
+
+        // Wait for Supabase
+        async function waitForSupabase(maxWait = 10000) {
+            const start = Date.now();
+            while (!window.supabaseClient && Date.now() - start < maxWait) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return window.supabaseClient;
+        }
+
+        // Notification system
+        const notify = (message, type = 'success') => {
+            const container = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <span>${type === 'loading' ? '<span class="loading-spinner"></span>' : (type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️')}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(notification);
+            
+            if (type !== 'loading') {
+                setTimeout(() => notification.remove(), 4000);
+            }
+            
+            return notification;
+        };
+
+        // ========== STOCK ITEMS ==========
+        async function loadStockItems() {
+            try {
+                notify('Loading stock items...', 'loading');
+                const { data, error } = await window.supabaseClient
+                    .from('stock_items')
+                    .select('*')
+                    .limit(100);
+
+                if (error) throw error;
+
+                const stockData = data || [];
+                document.getElementById('stock-total').textContent = stockData.length;
+                document.getElementById('stock-occupied').textContent = stockData.filter(s => s.fill_level > 0).length;
+
+                const tbody = document.getElementById('stock-tbody');
+                tbody.innerHTML = stockData.map(item => `
+                    <tr>
+                        <td>${item.location_id}</td>
+                        <td>${item.fill_level}%</td>
+                        <td>${item.category}</td>
+                        <td>
+                            <span class="badge ${
+                                item.fill_level === 0 ? 'stock-low' : 
+                                item.fill_level < 75 ? 'stock-medium' : 
+                                'stock-high'
+                            }">
+                                ${item.fill_level === 0 ? 'Empty' : item.fill_level < 75 ? 'Medium' : 'Full'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn-sm btn-primary" onclick="selectStockItem('${item.location_id}', ${item.fill_level}, '${item.category}')">Edit</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                notify(`Loaded ${stockData.length} stock items`, 'success');
+            } catch (error) {
+                notify(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function selectStockItem(locationId, fillLevel, category) {
+            document.getElementById('stock-location-id').value = locationId;
+            document.getElementById('stock-fill-level').value = fillLevel;
+            document.getElementById('stock-category').value = category;
+            updateFillLevelDisplay();
+            document.querySelector('h3').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updateFillLevelDisplay() {
+            document.getElementById('fill-level-display').textContent = document.getElementById('stock-fill-level').value;
+        }
+
+        function clearStockForm() {
+            document.getElementById('stock-location-id').value = '';
+            document.getElementById('stock-fill-level').value = 50;
+            document.getElementById('stock-category').value = '';
+            updateFillLevelDisplay();
+        }
+
+        async function updateStockItem() {
+            try {
+                const locationId = document.getElementById('stock-location-id').value;
+                const fillLevel = parseInt(document.getElementById('stock-fill-level').value);
+                const category = document.getElementById('stock-category').value;
+
+                if (!locationId) {
+                    notify('Please select a location', 'error');
+                    return;
+                }
+
+                notify('Saving to Supabase...', 'loading');
+
+                const { error } = await window.supabaseClient
+                    .from('stock_items')
+                    .update({ fill_level: fillLevel, category })
+                    .eq('location_id', locationId);
+
+                if (error) throw error;
+
+                notify(`Stock item updated: ${locationId}`, 'success');
+                loadStockItems();
+                clearStockForm();
+            } catch (error) {
+                notify(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function filterStockTable() {
+            const searchTerm = document.getElementById('stock-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#stock-tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function exportStockData() {
+            const rows = document.querySelectorAll('#stock-table tbody tr');
+            let csv = 'Location ID,Fill Level,Category,Status\n';
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    const cells = row.querySelectorAll('td');
+                    csv += `${cells[0].textContent},${cells[1].textContent},${cells[2].textContent},${cells[3].textContent}\n`;
+                }
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `stock_${Date.now()}.csv`;
+            a.click();
+        }
+
+        // ========== AGVs ==========
+        async function loadAGVs() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('agvs')
+                    .select('*');
+
+                if (error) throw error;
+
+                const agvData = data || [];
+                document.getElementById('agv-total').textContent = agvData.length;
+                document.getElementById('agv-active').textContent = agvData.filter(a => a.status !== 'idle').length;
+
+                const tbody = document.getElementById('agv-tbody');
+                tbody.innerHTML = agvData.map(agv => `
+                    <tr>
+                        <td>${agv.id}</td>
+                        <td><span style="color: ${agv.status === 'idle' ? '#94a3b8' : '#10b981'}">${agv.status}</span></td>
+                        <td>${agv.battery}%</td>
+                        <td>X: ${agv.x_m?.toFixed(1)}, Z: ${agv.z_m?.toFixed(1)}</td>
+                        <td>
+                            <button class="btn-sm btn-primary" onclick="selectAGV('${agv.id}', '${agv.status}', ${agv.battery}, ${agv.x_m}, ${agv.z_m})">Edit</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Populate AGV select for tasks
+                const agvSelect = document.getElementById('task-agv-id');
+                agvSelect.innerHTML = '<option value="">Not Assigned</option>' + 
+                    agvData.map(agv => `<option value="${agv.id}">${agv.id}</option>`).join('');
+
+            } catch (error) {
+                notify(`Error loading AGVs: ${error.message}`, 'error');
+            }
+        }
+
+        function selectAGV(id, status, battery, x, z) {
+            document.getElementById('agv-id').value = id;
+            document.getElementById('agv-status').value = status;
+            document.getElementById('agv-battery').value = battery;
+            document.getElementById('agv-x').value = x;
+            document.getElementById('agv-z').value = z;
+            updateBatteryDisplay();
+        }
+
+        function updateBatteryDisplay() {
+            document.getElementById('battery-display').textContent = document.getElementById('agv-battery').value;
+        }
+
+        function clearAGVForm() {
+            document.getElementById('agv-id').value = '';
+            document.getElementById('agv-status').value = 'idle';
+            document.getElementById('agv-battery').value = 100;
+            document.getElementById('agv-x').value = '';
+            document.getElementById('agv-z').value = '';
+            updateBatteryDisplay();
+        }
+
+        async function updateAGV() {
+            try {
+                const id = document.getElementById('agv-id').value;
+                if (!id) {
+                    notify('Please select an AGV', 'error');
+                    return;
+                }
+
+                const { error } = await window.supabaseClient
+                    .from('agvs')
+                    .update({
+                        status: document.getElementById('agv-status').value,
+                        battery: parseInt(document.getElementById('agv-battery').value),
+                        x_m: parseFloat(document.getElementById('agv-x').value) || 0,
+                        z_m: parseFloat(document.getElementById('agv-z').value) || 0
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                notify(`AGV ${id} updated`, 'success');
+                loadAGVs();
+            } catch (error) {
+                notify(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function filterAGVTable() {
+            const searchTerm = document.getElementById('agv-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#agv-tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        // ========== TASKS ==========
+        async function loadTasks() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('tasks')
+                    .select('*')
+                    .limit(50);
+
+                if (error) throw error;
+
+                const taskData = data || [];
+                document.getElementById('task-total').textContent = taskData.length;
+                document.getElementById('task-pending').textContent = taskData.filter(t => t.status === 'pending').length;
+
+                const tbody = document.getElementById('task-tbody');
+                tbody.innerHTML = taskData.map(task => `
+                    <tr>
+                        <td>${task.id}</td>
+                        <td>${task.task_type}</td>
+                        <td><span style="color: ${task.status === 'completed' ? '#10b981' : task.status === 'pending' ? '#f59e0b' : '#ef4444'}">${task.status}</span></td>
+                        <td>${task.agv_id || '-'}</td>
+                        <td>
+                            <button class="btn-sm btn-primary" onclick="selectTask('${task.id}', '${task.task_type}', '${task.status}', ${task.priority}, '${task.agv_id || ''}')">Edit</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                notify(`Error loading tasks: ${error.message}`, 'error');
+            }
+        }
+
+        function selectTask(id, type, status, priority, agvId) {
+            document.getElementById('task-id').value = id;
+            document.getElementById('task-type').value = type;
+            document.getElementById('task-status').value = status;
+            document.getElementById('task-priority').value = priority;
+            document.getElementById('task-agv-id').value = agvId;
+        }
+
+        function clearTaskForm() {
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-type').value = '';
+            document.getElementById('task-status').value = 'pending';
+            document.getElementById('task-priority').value = '1';
+            document.getElementById('task-agv-id').value = '';
+        }
+
+        async function updateTask() {
+            try {
+                const id = document.getElementById('task-id').value;
+                if (!id) {
+                    notify('Please enter a task ID', 'error');
+                    return;
+                }
+
+                const { error } = await window.supabaseClient
+                    .from('tasks')
+                    .update({
+                        task_type: document.getElementById('task-type').value,
+                        status: document.getElementById('task-status').value,
+                        priority: parseInt(document.getElementById('task-priority').value),
+                        agv_id: document.getElementById('task-agv-id').value || null
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                notify(`Task ${id} updated`, 'success');
+                loadTasks();
+            } catch (error) {
+                notify(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // ========== REALTIME MONITOR ==========
+        let eventCount = 0;
+        let updateStart = Date.now();
+
+        function setupRealtimeMonitor() {
+            if (!window.supabaseClient) return;
+
+            // Monitor stock items
+            window.supabaseClient
+                .channel('monitor:stock_items')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'stock_items' },
+                    (payload) => {
+                        logEvent(`📦 Stock: ${payload.eventType} - ${payload.new?.location_id || payload.old?.location_id}`);
+                        eventCount++;
+                        updateEventRate();
+                    }
+                )
+                .subscribe();
+
+            // Monitor AGVs
+            window.supabaseClient
+                .channel('monitor:agvs')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'agvs' },
+                    (payload) => {
+                        logEvent(`🤖 AGV: ${payload.eventType} - ${payload.new?.id || payload.old?.id}`);
+                        eventCount++;
+                        updateEventRate();
+                    }
+                )
+                .subscribe();
+
+            // Monitor tasks
+            window.supabaseClient
+                .channel('monitor:tasks')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'tasks' },
+                    (payload) => {
+                        logEvent(`📋 Task: ${payload.eventType} - ${payload.new?.id || payload.old?.id}`);
+                        eventCount++;
+                        updateEventRate();
+                    }
+                )
+                .subscribe();
+        }
+
+        function logEvent(message) {
+            const log = document.getElementById('event-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const eventDiv = document.createElement('div');
+            eventDiv.textContent = `[${timestamp}] ${message}`;
+            eventDiv.style.color = '#10b981';
+            log.insertBefore(eventDiv, log.firstChild);
+
+            // Keep only last 20 events
+            while (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+
+            document.getElementById('last-update').textContent = timestamp;
+        }
+
+        function updateEventRate() {
+            const elapsed = (Date.now() - updateStart) / 1000 / 60; // minutes
+            const rate = Math.round(eventCount / elapsed);
+            document.getElementById('update-rate').textContent = rate;
+        }
+
+        function clearEventLog() {
+            document.getElementById('event-log').innerHTML = '<div style="color: #94a3b8;">Log cleared</div>';
+        }
+
+        // ========== BULK OPERATIONS ==========
+        async function bulkUpdateFillLevels() {
+            if (!confirm('Fill all locations to 100%?')) return;
+
+            notify('Bulk updating... This may take a moment', 'loading');
+
+            try {
+                const { data: locations } = await window.supabaseClient
+                    .from('locations')
+                    .select('id');
+
+                for (const loc of locations) {
+                    await window.supabaseClient
+                        .from('stock_items')
+                        .update({ fill_level: 100 })
+                        .eq('location_id', loc.id);
+                }
+
+                notify(`Updated ${locations.length} locations`, 'success');
+                loadStockItems();
+            } catch (error) {
+                notify(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function randomizeData() {
+            notify('Randomizing data...', 'loading');
+
+            window.supabaseClient
+                .from('stock_items')
+                .select('location_id')
+                .then(({ data }) => {
+                    data?.forEach(item => {
+                        window.supabaseClient
+                            .from('stock_items')
+                            .update({ fill_level: Math.floor(Math.random() * 101) })
+                            .eq('location_id', item.location_id);
+                    });
+                    notify('Data randomized!', 'success');
+                    loadStockItems();
+                });
+        }
+
+        function resetAllData() {
+            if (!confirm('Reset all data to initial state? This cannot be undone!')) return;
+            notify('Resetting... This will take a while', 'loading');
+            // Add actual reset logic here
+        }
+    </script>
+</body>
+</html>

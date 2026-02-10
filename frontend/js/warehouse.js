@@ -379,11 +379,8 @@ function addWarehouseLights(scene, width, depth, height) {
             spotLight.penumbra = 0.3;
             spotLight.decay = 2;
             spotLight.distance = 25;
-            spotLight.castShadow = true;
-            spotLight.shadow.mapSize.width = 512;
-            spotLight.shadow.mapSize.height = 512;
-            spotLight.shadow.camera.near = 1;
-            spotLight.shadow.camera.far = 20;
+            // castShadow disabled to avoid exceeding MAX_TEXTURE_IMAGE_UNITS
+            spotLight.castShadow = false;
             scene.add(spotLight);
 
             // Light fixture (visual only)

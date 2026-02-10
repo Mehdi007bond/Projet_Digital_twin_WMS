@@ -18,6 +18,10 @@ class KPIDashboard {
 
     async init() {
         console.log('[KPI] Dashboard initializing...');
+        
+        // CRITICAL: Wait for Supabase to be ready first!
+        await this.waitForSupabase();
+        
         this.bindEvents();
         this.initCharts();
         await this.fetchAndRender();
@@ -25,6 +29,18 @@ class KPIDashboard {
         this.connectWebSocket();
         this.updateTimestamp();
         console.log('[KPI] Dashboard ready');
+    }
+
+    async waitForSupabase(maxWait = 10000) {
+        const start = Date.now();
+        while (!window.supabaseClient && Date.now() - start < maxWait) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        if (!window.supabaseClient) {
+            console.error('[KPI] ❌ Supabase initialization timeout');
+        } else {
+            console.log('[KPI] ✅ Supabase ready');
+        }
     }
 
     bindEvents() {
@@ -104,14 +120,37 @@ class KPIDashboard {
 
     async fetchJSON(path) {
         try {
-            if (window.apiClient) {
-                return await window.apiClient.get(path.replace('/api/', ''));
+            // Use Supabase via dataPipeline instead of HTTP API
+            if (path.includes('/stock_summary')) {
+                  const stockItems = await dataPipeline.loadStockItems();
+                const locations = await dataPipeline.loadLocations();
+                
+                if (stockItems && locations) {
+                    const totalLocations = locations.length;
+                    const occupiedLocations = stockItems.filter(s => s.fill_level > 0).length;
+                    const avgFillLevel = stockItems.reduce((sum, s) => sum + (s.fill_level || 0), 0) / stockItems.length;
+                    
+                    return {
+                        fill_rate: (occupiedLocations / totalLocations) * 100,
+                        available_locations: totalLocations - occupiedLocations,
+                        total_items: stockItems.length
+                    };
+                }
+            } else if (path.includes('/agv_status')) {
+                const agvs = await dataPipeline.loadAGVs();
+                if (agvs && agvs.length > 0) {
+                    const avgBattery = agvs.reduce((sum, a) => sum + (a.battery || 0), 0) / agvs.length;
+                    return {
+                        utilization_percent: avgBattery,
+                        avg_battery: avgBattery
+                    };
+                }
             }
-            const resp = await fetch(path);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            return await resp.json();
+            
+            console.warn('[KPI] No Supabase data available for:', path);
+            return null;
         } catch (err) {
-            console.warn('[KPI] API call failed:', path, err.message);
+            console.warn('[KPI] Supabase call failed:', path, err.message);
             return null;
         }
     }
@@ -438,42 +477,45 @@ class KPIDashboard {
 
     connectWebSocket() {
         try {
-            if (window.apiClient && typeof window.apiClient.connectWebSocket === 'function') {
-                window.apiClient.connectWebSocket();
-                window.apiClient.on('connected', () => this.setWSStatus(true));
-                window.apiClient.on('disconnected', () => this.setWSStatus(false));
-                window.apiClient.on('kpi_update', (data) => {
-                    if (data) {
-                        this.renderSummary(data);
-                        if (data.stock) this.renderStockKPIs(data.stock);
-                        if (data.agv) this.renderAGVKPIs(data.agv);
-                        if (data.wms) this.renderWMSKPIs(data.wms);
-                        this.generateAlerts(data);
-                        this.previousData = data;
-                        this.updateTimestamp();
-                    }
-                });
-            } else {
-                // Direct WebSocket fallback
-                const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const ws = new WebSocket(`${proto}//${location.host}/ws`);
-                ws.onopen = () => this.setWSStatus(true);
-                ws.onclose = () => {
-                    this.setWSStatus(false);
-                    setTimeout(() => this.connectWebSocket(), 5000);
-                };
-                ws.onmessage = (evt) => {
-                    try {
-                        const msg = JSON.parse(evt.data);
-                        if (msg.type === 'kpi_update' && msg.data) {
-                            this.renderSummary(msg.data);
-                            this.updateTimestamp();
-                        }
-                    } catch (e) { /* ignore parse errors */ }
-                };
+            if (!window.supabaseClient) {
+                console.warn('[KPI] ❌ Supabase not available');
+                this.setWSStatus(false);
+                return;
             }
+            
+            console.log('[KPI] ✅ Subscribing to Supabase Realtime updates');
+            this.setWSStatus(true);
+            
+            // Subscribe to stock_items changes - RELOAD EVERYTHING
+            window.supabaseClient
+                .channel('kpi:stock_items')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'stock_items' },
+                    (payload) => {
+                        console.log('[KPI] 📨 Stock update received - reloading dashboard:', payload.eventType);
+                        this.fetchAndRender();
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('[KPI] Stock subscription status:', status);
+                });
+            
+            // Subscribe to agvs changes - RELOAD EVERYTHING
+            window.supabaseClient
+                .channel('kpi:agvs')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'agvs' },
+                    (payload) => {
+                        console.log('[KPI] 📨 AGV update received - reloading dashboard:', payload.eventType);
+                        this.fetchAndRender();
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('[KPI] AGV subscription status:', status);
+                });
+                
         } catch (err) {
-            console.warn('[KPI] WebSocket connect failed:', err);
+            console.error('[KPI] ❌ Realtime subscribe failed:', err);
             this.setWSStatus(false);
         }
     }

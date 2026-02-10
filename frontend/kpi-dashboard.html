@@ -6,6 +6,13 @@
     <title>KPI Dashboard - Digital Twin WMS</title>
     <link rel="stylesheet" href="css/kpi-dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Supabase Realtime (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
+    <script src="js/supabase-config.js"></script>
+    
+    <!-- Demo Sample Data (for offline development) -->
+    <script src="js/sample-data.js"></script>
 </head>
 <body>
 
@@ -319,9 +326,11 @@
     </main>
 
     <!-- Scripts -->
-    <script src="js/api-config.js"></script>
-    <script src="js/data-pipeline.js"></script>
-    <script src="js/kpi-dashboard.js"></script>
+    <!-- API Configuration (remplace Supabase) -->
+    <!-- DISABLED: Using real Supabase instead of HTTP API -->
+    <!-- <script src="js/api-config.js"></script> -->
+    <script src="js/data-pipeline.js?v=5"></script>
+    <script src="js/kpi-dashboard.js?v=3"></script>
 
 </body>
 </html>

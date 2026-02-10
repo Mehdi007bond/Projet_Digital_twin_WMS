@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Twin WMS | 3D Warehouse Visualization</title>
     <link rel="stylesheet" href="css/style-light.css">
+    
+    <!-- Supabase Realtime (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
+    <script src="js/supabase-config.js"></script>
+    
+    <!-- Demo Sample Data (for offline development) -->
+    <script src="js/sample-data.js"></script>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -476,17 +483,18 @@
     <script src="lib/js/controls/OrbitControls.js"></script>
     <script src="lib/js/loaders/GLTFLoader.js"></script>
     <!-- API Configuration (remplace Supabase) -->
-    <script src="js/api-config.js"></script>
-    <script src="js/warehouse.js"></script>
-    <script src="js/racks.js"></script>
-    <script src="js/navigation.js"></script>
-    <script src="js/taskManager.js"></script>
-    <script src="js/agv.js"></script>
-    <script src="js/stock.js"></script>
-    <script src="js/controls.js"></script>
-    <script src="js/websocket.js"></script>
-    <script src="js/widgetManager.js"></script>
-    <script src="js/stockTracker.js"></script>
-    <script src="js/main.js"></script>
+    <!-- DISABLED: Using real Supabase instead of HTTP API -->
+    <!-- <script src="js/api-config.js"></script> -->
+    <script src="js/warehouse.js?v=3"></script>
+    <script src="js/racks.js?v=2"></script>
+    <script src="js/navigation.js?v=2"></script>
+    <script src="js/taskManager.js?v=2"></script>
+    <script src="js/agv.js?v=2"></script>
+    <script src="js/stock.js?v=2"></script>
+    <script src="js/controls.js?v=2"></script>
+    <script src="js/websocket-supabase.js?v=2"></script>
+    <script src="js/widgetManager.js?v=2"></script>
+    <script src="js/stockTracker.js?v=2"></script>
+    <script src="js/main.js?v=3"></script>
 </body>
 </html>

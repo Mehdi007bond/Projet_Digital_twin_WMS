@@ -1,117 +1,103 @@
--- Digital Twin WMS - Seed data
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Digital Twin WMS - Comprehensive Seed Data (CORRECTED)
+-- Creates: Zones, Racks, Locations, Stock Items, Tasks
+-- ═══════════════════════════════════════════════════════════════════════════
 
-WITH w AS (
-    INSERT INTO warehouses (name, width_m, depth_m, height_m)
-    VALUES ('Main Warehouse', 50, 30, 10)
-    RETURNING id
-),
-zone_data AS (
-    SELECT
-        w.id AS warehouse_id,
-        v.name,
-        v.zone_type,
-        v.x_m,
-        v.z_m,
-        v.width_m,
-        v.depth_m,
-        v.color_hex
-    FROM w
-    CROSS JOIN (VALUES
-        ('Reception', 'reception', 0, -10, 50, 8, '#90ee90'),
-        ('Storage', 'storage', 0, 0, 50, 14, '#808080'),
-        ('Expedition', 'expedition', 0, 10, 50, 8, '#87ceeb'),
-        ('Charging', 'charging', -20, -10, 8, 8, '#ffcc00')
-    ) AS v(name, zone_type, x_m, z_m, width_m, depth_m, color_hex)
-)
+-- INSERT ZONES
+WITH wh AS (SELECT id FROM warehouses WHERE name = 'Main Warehouse' LIMIT 1)
 INSERT INTO zones (warehouse_id, name, zone_type, x_m, z_m, width_m, depth_m, color_hex)
-SELECT * FROM zone_data;
+SELECT w.id, name, zone_type, x_m, z_m, width_m, depth_m, color 
+FROM wh as w,
+(VALUES
+    ('Storage Zone A', 'storage', 0::numeric, 0::numeric, 50::numeric, 30::numeric, '#4CAF50'),
+    ('Storage Zone B', 'storage', 50::numeric, 0::numeric, 50::numeric, 30::numeric, '#66BB6A'),
+    ('Shipping Dock', 'shipping', 0::numeric, 30::numeric, 50::numeric, 10::numeric, '#2196F3'),
+    ('Receiving Dock', 'receiving', 50::numeric, 30::numeric, 50::numeric, 10::numeric, '#FF9800')
+) AS zones(name, zone_type, x_m, z_m, width_m, depth_m, color);
 
-WITH w AS (
-    SELECT id FROM warehouses ORDER BY created_at DESC LIMIT 1
-),
-params AS (
-    SELECT
-        w.id AS warehouse_id,
-        r AS row_no,
-        b AS bay_no,
-        (b - 3) * 2.7 AS x_m,
-        (r - 2) * 4.5 AS z_m,
-        (chr(64 + r) || b::text) AS rack_code
-    FROM w
-    CROSS JOIN generate_series(1, 3) AS r
-    CROSS JOIN generate_series(1, 5) AS b
-)
+-- INSERT RACKS (16 racks distributed across warehouse)
+WITH wh AS (SELECT id FROM warehouses WHERE name = 'Main Warehouse' LIMIT 1)
 INSERT INTO racks (warehouse_id, rack_code, row_no, bay_no, x_m, z_m)
-SELECT warehouse_id, rack_code, row_no, bay_no, x_m, z_m
-FROM params
-ORDER BY row_no, bay_no;
+SELECT wh.id, rack_code, row_no, bay_no, x_m, z_m
+FROM wh,
+LATERAL (
+    SELECT 
+        'RACK-' || chr(65 + r) || b::text as rack_code,
+        r as row_no,
+        b as bay_no,
+        5 + (r * 12)::numeric as x_m,
+        2 + (b * 8)::numeric as z_m
+    FROM generate_series(0, 3) r, generate_series(0, 3) b
+) racks;
 
+-- INSERT LOCATIONS (320 locations: 16 racks × 4 levels × 5 slots)
 WITH rack_list AS (
-    SELECT id AS rack_id, row_no, bay_no, x_m, z_m
-    FROM racks
-    ORDER BY row_no, bay_no
-),
-levels AS (
-    SELECT generate_series(1, 4) AS level_no
-),
-locs AS (
-    SELECT
-        r.rack_id,
-        r.row_no,
-        r.bay_no,
-        l.level_no,
-        r.x_m,
-        (0.3 + (l.level_no - 1) * 2.0 + 0.15) AS y_m,
-        r.z_m
-    FROM rack_list r
-    CROSS JOIN levels l
+    SELECT id, rack_code, row_no, bay_no, x_m, z_m 
+    FROM racks 
+    WHERE warehouse_id = (SELECT id FROM warehouses WHERE name = 'Main Warehouse')
 )
-INSERT INTO locations (id, rack_id, row_no, bay_no, level_no, x_m, y_m, z_m)
+INSERT INTO locations (id, rack_id, row_no, bay_no, level_no, x_m, y_m, z_m, occupied)
 SELECT
-    ('R' || row_no || 'B' || bay_no || 'L' || level_no) AS id,
-    rack_id, row_no, bay_no, level_no, x_m, y_m, z_m
-FROM locs
-ORDER BY row_no, bay_no, level_no;
+    rack.rack_code || '-' || lpad((level * 10 + slot)::text, 2, '0'),
+    rack.id,
+    rack.row_no,
+    rack.bay_no,
+    level,
+    rack.x_m + (slot::numeric * 0.6),
+    (0.5 + (level::numeric * 1.5)),
+    rack.z_m,
+    (random() > 0.4)::boolean
+FROM rack_list rack,
+LATERAL generate_series(1, 4) level,
+LATERAL generate_series(1, 5) slot;
 
-WITH locs AS (
-    SELECT * FROM locations
-),
-selected AS (
-    SELECT *
-    FROM locs
-    ORDER BY random()
-    LIMIT (SELECT CEIL(COUNT(*) * 0.7) FROM locs)
+-- INSERT STOCK ITEMS (random items in occupied locations)
+WITH occupied_locs AS (
+    SELECT id FROM locations WHERE occupied = true
 )
-INSERT INTO stock_items (id, location_id, fill_level, category)
+INSERT INTO stock_items (location_id, fill_level, category)
 SELECT
-    'STOCK_' || id AS id,
-    id AS location_id,
-    (40 + floor(random() * 61))::int AS fill_level,
-    CASE
-        WHEN random() < 0.2 THEN 'A'
-        WHEN random() < 0.5 THEN 'B'
-        ELSE 'C'
-    END AS category
-FROM selected;
+    loc.id,
+    (25 + (random() * 75))::int,
+    CASE (random() * 4)::int
+        WHEN 0 THEN 'Electronics'
+        WHEN 1 THEN 'Furniture'
+        WHEN 2 THEN 'Tools'
+        WHEN 3 THEN 'Textiles'
+        ELSE 'Industrial'
+    END
+FROM occupied_locs loc;
 
-UPDATE locations
-SET occupied = true
-WHERE id IN (SELECT location_id FROM stock_items);
+-- INSERT TASKS (20 tasks with various statuses)
+WITH loc_sample AS (
+    SELECT id FROM locations ORDER BY RANDOM() LIMIT 20
+),
+loc_list AS (
+    SELECT ARRAY_AGG(id) as all_locs FROM loc_sample
+)
+INSERT INTO tasks (id, agv_id, task_type, status, priority, pickup_location_id, dropoff_location_id)
+SELECT
+    'task-' || lpad(seq::text, 4, '0'),
+    CASE (seq % 3) WHEN 0 THEN 'agv-001' WHEN 1 THEN 'agv-002' ELSE 'agv-003' END,
+    CASE (seq % 3) WHEN 0 THEN 'inbound' WHEN 1 THEN 'outbound' ELSE 'relocate' END,
+    CASE (seq % 4) WHEN 0 THEN 'pending' WHEN 1 THEN 'assigned' WHEN 2 THEN 'in_progress' ELSE 'completed' END,
+    (seq % 3),
+    (all_locs[((seq - 1) % array_length(all_locs, 1)) + 1]),
+    (all_locs[(((seq - 1 + 5) % array_length(all_locs, 1)) + 1)])
+FROM generate_series(1, 20) seq, loc_list;
 
-INSERT INTO agvs (id, x_m, y_m, z_m, status, battery, speed_mps)
-VALUES
-    ('AGV-001', -20, 0.3, -10, 'charging', 25, 0),
-    ('AGV-002', 3, 0.3, 0, 'idle', 85, 0),
-    ('AGV-003', -3, 0.3, 8, 'idle', 70, 0);
+-- UPDATE AGV POSITIONS
+UPDATE agvs SET x_m = 20, z_m = 10, rotation_rad = 0, speed_mps = 0 WHERE id = 'agv-001';
+UPDATE agvs SET x_m = 50, z_m = 20, rotation_rad = 1.57, speed_mps = 0.5 WHERE id = 'agv-002';
+UPDATE agvs SET x_m = 80, z_m = 5, rotation_rad = 3.14, speed_mps = 0 WHERE id = 'agv-003';
 
-INSERT INTO orders (status, priority)
-VALUES ('created', 1);
-
-INSERT INTO order_items (order_id, sku, quantity, source_location_id)
-SELECT o.id, 'SKU-001', 5, 'R1B1L1'
-FROM orders o
-ORDER BY created_at DESC
-LIMIT 1;
-
-INSERT INTO missions (agv_id, status, pickup_location_id, dropoff_location_id)
-VALUES ('AGV-002', 'assigned', 'R1B1L1', 'R3B5L1');
+-- VERIFICATION: Show data counts
+SELECT 
+    'Warehouses' as entity, COUNT(*) as count FROM warehouses
+UNION ALL SELECT 'Zones', COUNT(*) FROM zones
+UNION ALL SELECT 'Racks', COUNT(*) FROM racks
+UNION ALL SELECT 'Locations', COUNT(*) FROM locations
+UNION ALL SELECT 'Stock Items', COUNT(*) FROM stock_items
+UNION ALL SELECT 'AGVs', COUNT(*) FROM agvs
+UNION ALL SELECT 'Tasks', COUNT(*) FROM tasks
+ORDER BY entity;
