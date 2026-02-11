@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2D Warehouse Map - Digital Twin WMS</title>
     <link rel="stylesheet" href="css/warehouse-2d.css">
+    <link rel="stylesheet" href="css/navigation-bar.css">
     
     <!-- Supabase Realtime (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/navigation-bar.js"></script>
     
     <!-- Demo Sample Data (for offline development) -->
     <script src="js/sample-data.js"></script>
@@ -18,6 +20,9 @@
     <header class="header">
         <div class="header-content">
             <h1>🗺️ Plan d'Entrepôt 2D - Digital Twin WMS</h1>
+            <button class="btn-back" onclick="window.location.href='home.html'" style="background: rgba(255, 255, 255, 0.2);">
+                🏠 Menu Principal
+            </button>
             <button class="btn-back" onclick="window.location.href='index.html'">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>

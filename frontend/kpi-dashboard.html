@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KPI Dashboard - Digital Twin WMS</title>
     <link rel="stylesheet" href="css/kpi-dashboard.css">
+    <link rel="stylesheet" href="css/navigation-bar.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <!-- Supabase Realtime (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/navigation-bar.js"></script>
     
     <!-- Demo Sample Data (for offline development) -->
     <script src="js/sample-data.js"></script>
@@ -21,6 +23,7 @@
         <div class="header-content">
             <h1>📊 KPI Dashboard</h1>
             <nav class="header-nav">
+                <a href="home.html" class="nav-link" style="background: rgba(255,255,255,0.2);">🏠 Menu</a>
                 <a href="index.html" class="nav-link">🏭 Entrepôt 3D</a>
                 <a href="warehouse-2d.html" class="nav-link">🗺️ Vue 2D</a>
                 <a href="stock-analysis.html" class="nav-link">📈 Analyse Stock</a>

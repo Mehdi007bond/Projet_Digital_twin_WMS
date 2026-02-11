@@ -6,7 +6,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // Global Variables
 // ═══════════════════════════════════════════════════════════════════════════
-
 let scene, camera, renderer, controls;
 let warehouseModel, racksModel, agvs, stockItems;
 let animationFrameId;
@@ -78,8 +77,12 @@ function init() {
     initUIControls(camera, controls, renderer);
 
     // Initialize WebSocket connection (demo mode)
-    console.log('🔌 Connecting to backend (demo mode)...');
-    initWebSocket(agvs, stockItems);
+    // Initialize Supabase Realtime connection
+    console.log('🔌 Connecting to Supabase Realtime...');
+    
+    // On n'a plus besoin de passer d'arguments car initSupabaseRealtime 
+    // utilise les variables globales (accessibles après publishGlobals())
+    initSupabaseRealtime();
 
     // Setup window resize handler
     window.addEventListener('resize', onWindowResize, false);

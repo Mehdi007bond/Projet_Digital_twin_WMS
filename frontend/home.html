@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Twin WMS - Menu Principal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .menu-card .icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .menu-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .menu-card p {
+            font-size: 1em;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .menu-card.frontend .icon { color: #667eea; }
+        .menu-card.backend .icon { color: #f093fb; }
+        .menu-card.management .icon { color: #4facfe; }
+        .menu-card.diagnostic .icon { color: #43e97b; }
+        .menu-card.kpi .icon { color: #fa709a; }
+        .menu-card.stock .icon { color: #feca57; }
+        .menu-card.warehouse2d .icon { color: #48dbfb; }
+
+        .footer {
+            margin-top: 50px;
+            color: white;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏭 Digital Twin WMS</h1>
+        <p>Warehouse Management System - Système de Gestion d'Entrepôt</p>
+    </div>
+
+    <div class="menu-grid">
+        <a href="index.html" class="menu-card frontend">
+            <div class="icon">🎮</div>
+            <h2>Vue 3D Interactive</h2>
+            <p>Visualisation en temps réel de l'entrepôt avec les AGVs et le stock. Interface 3D complète avec Three.js.</p>
+        </a>
+
+        <a href="warehouse-2d.html" class="menu-card warehouse2d">
+            <div class="icon">🗺️</div>
+            <h2>Vue 2D Entrepôt</h2>
+            <p>Plan 2D de l'entrepôt avec vue d'ensemble des zones de stockage et des mouvements des AGVs.</p>
+        </a>
+
+        <a href="kpi-dashboard.html" class="menu-card kpi">
+            <div class="icon">📊</div>
+            <h2>Dashboard KPI</h2>
+            <p>Tableaux de bord avec indicateurs de performance en temps réel (taux de remplissage, performances AGV).</p>
+        </a>
+
+        <a href="stock-analysis.html" class="menu-card stock">
+            <div class="icon">📦</div>
+            <h2>Analyse Stock</h2>
+            <p>Analyse détaillée des niveaux de stock, catégories de produits et optimisation des emplacements.</p>
+        </a>
+
+        <a href="management.html" class="menu-card management">
+            <div class="icon">⚙️</div>
+            <h2>Management</h2>
+            <p>Interface de gestion : configuration des AGVs, gestion des tâches, paramètres système.</p>
+        </a>
+
+        <a href="diagnostic.html" class="menu-card diagnostic">
+            <div class="icon">🔧</div>
+            <h2>Diagnostic</h2>
+            <p>Outils de diagnostic, logs système, tests de connexion et résolution de problèmes.</p>
+        </a>
+    </div>
+
+    <div class="footer">
+        <p>Version 1.0 - Supabase Realtime Sync Enabled</p>
+        <p>© 2026 Digital Twin WMS Project</p>
+    </div>
+
+    <script>
+        // Animation d'entrée pour les cartes
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.menu-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        // Ajout d'une animation de clic
+        document.querySelectorAll('.menu-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    // La navigation se fera naturellement
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

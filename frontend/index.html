@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Twin WMS | 3D Warehouse Visualization</title>
+    <title>Digital Twin WMS - Vue 3D Interactive</title>
     <link rel="stylesheet" href="css/style-light.css">
+    <link rel="stylesheet" href="css/navigation-bar.css">
     
     <!-- Supabase Realtime (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
@@ -12,6 +13,9 @@
     
     <!-- Demo Sample Data (for offline development) -->
     <script src="js/sample-data.js"></script>
+    
+    <!-- Navigation Bar -->
+    <script src="js/navigation-bar.js"></script>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -44,6 +48,7 @@
             <span id="connection-text">Connecting...</span>
         </div>
         <div class="top-bar-actions">
+            <button class="icon-btn" onclick="window.location.href='home.html'" title="Menu Principal" style="font-size: 16px; background: rgba(255,255,255,0.2);">🏠</button>
             <button class="icon-btn" onclick="window.location.href='warehouse-2d.html'" title="Vue 2D" style="font-size: 16px;">🗺️</button>
             <button class="icon-btn" onclick="window.location.href='stock-analysis.html'" title="Analyse Stock" style="font-size: 16px;">📈</button>
             <button class="icon-btn" onclick="window.location.href='kpi-dashboard.html'" title="KPI Dashboard" style="font-size: 16px;">📊</button>
