@@ -675,6 +675,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/realtime-sync.js"></script>
     <script>
         // Initialize
         window.addEventListener('load', async () => {
@@ -1000,9 +1001,44 @@
         let updateStart = Date.now();
 
         function setupRealtimeMonitor() {
+            let refreshTimer = null;
+            const scheduleRefresh = () => {
+                if (refreshTimer) clearTimeout(refreshTimer);
+                refreshTimer = setTimeout(() => {
+                    loadStockItems();
+                    loadAGVs();
+                    loadTasks();
+                }, 300);
+            };
+
+            if (window.DTRealtime && typeof window.DTRealtime.start === 'function') {
+                window.DTRealtime.start();
+
+                window.addEventListener('dt:stock_items', (e) => {
+                    logEvent(`📦 Stock: ${e.detail.eventType} - ${e.detail.new?.location_id || e.detail.old?.location_id}`);
+                    eventCount++;
+                    updateEventRate();
+                    scheduleRefresh();
+                });
+
+                window.addEventListener('dt:agvs', (e) => {
+                    logEvent(`🤖 AGV: ${e.detail.eventType} - ${e.detail.new?.id || e.detail.old?.id}`);
+                    eventCount++;
+                    updateEventRate();
+                    scheduleRefresh();
+                });
+
+                window.addEventListener('dt:tasks', (e) => {
+                    logEvent(`📋 Task: ${e.detail.eventType} - ${e.detail.new?.id || e.detail.old?.id}`);
+                    eventCount++;
+                    updateEventRate();
+                    scheduleRefresh();
+                });
+                return;
+            }
+
             if (!window.supabaseClient) return;
 
-            // Monitor stock items
             window.supabaseClient
                 .channel('monitor:stock_items')
                 .on('postgres_changes',
@@ -1011,11 +1047,11 @@
                         logEvent(`📦 Stock: ${payload.eventType} - ${payload.new?.location_id || payload.old?.location_id}`);
                         eventCount++;
                         updateEventRate();
+                        scheduleRefresh();
                     }
                 )
                 .subscribe();
 
-            // Monitor AGVs
             window.supabaseClient
                 .channel('monitor:agvs')
                 .on('postgres_changes',
@@ -1024,11 +1060,11 @@
                         logEvent(`🤖 AGV: ${payload.eventType} - ${payload.new?.id || payload.old?.id}`);
                         eventCount++;
                         updateEventRate();
+                        scheduleRefresh();
                     }
                 )
                 .subscribe();
 
-            // Monitor tasks
             window.supabaseClient
                 .channel('monitor:tasks')
                 .on('postgres_changes',
@@ -1037,6 +1073,7 @@
                         logEvent(`📋 Task: ${payload.eventType} - ${payload.new?.id || payload.old?.id}`);
                         eventCount++;
                         updateEventRate();
+                        scheduleRefresh();
                     }
                 )
                 .subscribe();

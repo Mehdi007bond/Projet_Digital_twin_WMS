@@ -127,6 +127,14 @@ function applyAgvUpdate(data) {
     if (agv) {
         console.log(`✅ Sync AGV [${agv.id}] -> x:${data.x_m}, z:${data.z_m}, status:${data.status}`);
 
+        // Realtime takes control: prevent local simulation from overriding
+        agv.externalControl = true;
+        agv.path = [];
+        agv.currentWaypointIndex = 0;
+        agv.movePhase = 'arrived';
+        agv.targetSpeed = 0;
+        agv.speed = 0;
+
         // 3. Mise à jour de la position (Téléportation directe pour test)
         if (data.x_m !== undefined) agv.position.x = data.x_m;
         if (data.y_m !== undefined) agv.position.y = data.y_m;
@@ -145,9 +153,6 @@ function applyAgvUpdate(data) {
         // 6. Mise à jour Batterie
         if (data.battery !== undefined) {
             agv.battery = data.battery;
-            if (agv.updateBattery) {
-                agv.updateBattery(data.battery);
-            }
         }
 
         // 7. Mise à jour Speed
@@ -185,8 +190,51 @@ function applyStockUpdate(data) {
         if (data.category !== undefined) {
             item.category = data.category;
         }
+        // Update SKU and product info
+        if (data.sku !== undefined) {
+            item.sku = data.sku;
+        }
+        if (data.product_name !== undefined) {
+            item.product_name = data.product_name;
+        }
+        if (data.quality_tier !== undefined) {
+            item.quality_tier = data.quality_tier;
+        }
+
+        // Dispatch event for other components on same page (KPI widgets etc.)
+        window.dispatchEvent(new CustomEvent('stock:updated', { 
+            detail: { locationId: data.location_id, data: data }
+        }));
     } else {
-        console.error(`❌ Stock item introuvable ! Location: "${data.location_id}"`);
+        console.error(`❌ Stock item introuvable ! Location: "${data.location_id}". IDs disponibles:`, 
+            stockList.slice(0, 5).map(s => s.location?.id));
+    }
+}
+
+/**
+ * Push AGV state from 3D to Supabase
+ * Call this when AGV position changes locally (e.g., simulation)
+ */
+async function pushAGVToSupabase(agv) {
+    if (!supabaseClient || !agv) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('agvs')
+            .update({
+                x_m: agv.position.x,
+                y_m: agv.position.y,
+                z_m: agv.position.z,
+                rotation_rad: agv.rotation,
+                status: agv.status,
+                battery: agv.battery,
+                speed_mps: agv.speed
+            })
+            .eq('id', agv.id);
+
+        if (error) console.error(`❌ Push AGV ${agv.id} failed:`, error);
+    } catch (err) {
+        console.error('❌ pushAGVToSupabase error:', err);
     }
 }
 

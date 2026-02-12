@@ -57,6 +57,7 @@ class AGV {
         this.targetRotation = 0;
         this.status = status;
         this.previousStatus = status;
+        this.externalControl = false;
 
         // Physical properties
         this.battery = Math.random() * 40 + 45;
@@ -184,6 +185,13 @@ class AGV {
 
     update(deltaTime) {
         if (!this.model) return;
+
+        if (this.externalControl) {
+            this.targetSpeed = 0;
+            this.speed = 0;
+            this.updateVisuals(deltaTime);
+            return;
+        }
 
         switch (this.status) {
             case AGV_STATUS.IDLE:
@@ -463,7 +471,7 @@ class AGV {
     }
 
     isAvailable() {
-        return this.status === AGV_STATUS.IDLE && !this.currentTask && this.battery > 20;
+        return !this.externalControl && this.status === AGV_STATUS.IDLE && !this.currentTask && this.battery > 20;
     }
 }
 
@@ -494,6 +502,34 @@ function createAGVs(scene) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 3D Model Creation
 // ═══════════════════════════════════════════════════════════════════════════
+
+function createAGVLabel(agv) {
+    const labelText = String(agv.id || '?');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Simple high-contrast label
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 72px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(labelText, canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(0.8, 0.4, 1);
+    sprite.position.set(0, 0.7, 0);
+    return sprite;
+}
 
 function createAGVModel(agv) {
     const agvGroup = new THREE.Group();
@@ -530,6 +566,11 @@ function createAGVModel(agv) {
     led.position.set(0, 0.18, 0);
     agvGroup.add(led);
     agv.statusLED = led;
+
+    // ID Label
+    const label = createAGVLabel(agv);
+    agvGroup.add(label);
+    agv.labelSprite = label;
 
     // Forks
     const forkGeo = new THREE.BoxGeometry(0.8, 0.05, 0.1);

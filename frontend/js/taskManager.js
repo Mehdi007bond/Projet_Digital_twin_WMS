@@ -92,6 +92,8 @@ class TaskQueueManager {
         this.autoGenerateTasks = true; // Set to false if you want only manual demos
         this.lastTaskGeneration = 0;
         this.taskGenerationInterval = 8000;
+        this.completedTasksCount = 0;
+        this.startTime = Date.now();
     }
 
     registerFleet(agvs) {
@@ -102,7 +104,8 @@ class TaskQueueManager {
         return {
             activeTasks: this.activeTasks.size,
             pendingTasks: this.pendingTasks.length,
-            completedTasks: 0 // TODO: Track completed tasks
+            completedTasks: this.completedTasksCount,
+            totalTasksCompleted: this.completedTasksCount
         };
     }
 
@@ -221,6 +224,7 @@ class TaskQueueManager {
     checkTaskCompletion() {
         this.activeTasks.forEach((task, taskId) => {
             if (task.status === 'completed') {
+                this.completedTasksCount++;
                 this.activeTasks.delete(taskId);
             }
         });

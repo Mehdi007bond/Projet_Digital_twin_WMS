@@ -1,7 +1,6 @@
 /**
  * Data Pipeline Module - Digital Twin WMS
- * Architecture 100% Docker locale (SANS Supabase)
- * Handles data processing via API locale avec IndexedDB cache
+ * Handles Supabase data loading with IndexedDB cache
  */
 
 class DataPipeline {
@@ -9,7 +8,7 @@ class DataPipeline {
         this.cache = new Map();
         this.indexedDB = null;
         this.dbName = 'WarehouseDB';
-        this.dbVersion = 1;
+        this.dbVersion = 2;
         this.batchSize = 1000;
         this.apiBase = window.API_CONFIG?.BASE_URL || '/api';
         this.initDB();
@@ -69,7 +68,7 @@ class DataPipeline {
             console.log('📍 Fetching locations from Supabase...');
             const locations = await this.fetchFromSupabase('locations');
             console.log(`✅ Loaded ${locations.length} locations`);
-            await this.saveData(locations, 'locations');
+            try { await this.saveData(locations, 'locations'); } catch(e) { console.warn('⚠️ IndexedDB cache failed for locations, using memory only'); }
             return locations;
         } catch (error) {
             console.error('❌ Error loading locations:', error);
@@ -85,7 +84,7 @@ class DataPipeline {
             console.log('📦 Fetching stock items from Supabase...');
             const stockItems = await this.fetchFromSupabase('stock_items');
             console.log(`✅ Loaded ${stockItems.length} stock items`);
-            await this.saveData(stockItems, 'stockData');
+            try { await this.saveData(stockItems, 'stockData'); } catch(e) { console.warn('⚠️ IndexedDB cache failed for stockData, using memory only'); }
             return stockItems;
         } catch (error) {
             console.error('❌ Error loading stock items:', error);
@@ -101,7 +100,7 @@ class DataPipeline {
             console.log('🤖 Fetching AGVs from Supabase...');
             const agvs = await this.fetchFromSupabase('agvs');
             console.log(`✅ Loaded ${agvs.length} AGVs`);
-            await this.saveData(agvs, 'agvs');
+            try { await this.saveData(agvs, 'agvs'); } catch(e) { console.warn('⚠️ IndexedDB cache failed for agvs, using memory only'); }
             return agvs;
         } catch (error) {
             console.error('❌ Error loading AGVs:', error);
@@ -133,6 +132,26 @@ class DataPipeline {
      */
     async updateStockItem(itemId, updates) {
         try {
+            if (window.supabaseClient) {
+                let result = await window.supabaseClient
+                    .from('stock_items')
+                    .update(updates)
+                    .eq('location_id', itemId)
+                    .select();
+
+                if (result.error || !result.data || result.data.length === 0) {
+                    result = await window.supabaseClient
+                        .from('stock_items')
+                        .update(updates)
+                        .eq('id', itemId)
+                        .select();
+                }
+
+                if (result.error) throw result.error;
+                console.log('✅ Stock item updated (Supabase):', itemId);
+                return result.data?.[0] || null;
+            }
+
             const url = `${this.apiBase}/stock_items/${itemId}`;
             const response = await fetch(url, {
                 method: 'PATCH',
@@ -158,6 +177,18 @@ class DataPipeline {
      */
     async updateAGV(agvId, updates) {
         try {
+            if (window.supabaseClient) {
+                const { data, error } = await window.supabaseClient
+                    .from('agvs')
+                    .update(updates)
+                    .eq('id', agvId)
+                    .select();
+
+                if (error) throw error;
+                console.log('✅ AGV updated (Supabase):', agvId);
+                return data?.[0] || null;
+            }
+
             const url = `${this.apiBase}/agvs/${agvId}`;
             const response = await fetch(url, {
                 method: 'PATCH',
@@ -183,6 +214,17 @@ class DataPipeline {
      */
     async batchUpdateStockItems(items) {
         try {
+            if (window.supabaseClient) {
+                const { data, error } = await window.supabaseClient
+                    .from('stock_items')
+                    .upsert(items, { onConflict: 'location_id' })
+                    .select();
+
+                if (error) throw error;
+                console.log(`✅ Batch updated ${data?.length || 0} stock items (Supabase)`);
+                return { updated: data?.length || 0 };
+            }
+
             const url = `${this.apiBase}/batch/stock_items`;
             const response = await fetch(url, {
                 method: 'POST',
@@ -208,6 +250,17 @@ class DataPipeline {
      */
     async batchUpdateAGVs(agvs) {
         try {
+            if (window.supabaseClient) {
+                const { data, error } = await window.supabaseClient
+                    .from('agvs')
+                    .upsert(agvs, { onConflict: 'id' })
+                    .select();
+
+                if (error) throw error;
+                console.log(`✅ Batch updated ${data?.length || 0} AGVs (Supabase)`);
+                return { updated: data?.length || 0 };
+            }
+
             const url = `${this.apiBase}/batch/agvs`;
             const response = await fetch(url, {
                 method: 'POST',
@@ -235,31 +288,62 @@ class DataPipeline {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = () => reject(request.error);
+            request.onerror = () => {
+                console.warn('⚠️ IndexedDB open failed, deleting and retrying...');
+                indexedDB.deleteDatabase(this.dbName);
+                // Retry once after deletion
+                const retry = indexedDB.open(this.dbName, this.dbVersion);
+                retry.onerror = () => {
+                    console.error('❌ IndexedDB retry failed, running without cache');
+                    resolve(null);
+                };
+                retry.onsuccess = () => {
+                    this.indexedDB = retry.result;
+                    console.log('📦 IndexedDB initialized (after reset)');
+                    resolve(this.indexedDB);
+                };
+                retry.onupgradeneeded = (event) => this._createStores(event.target.result);
+            };
             request.onsuccess = () => {
                 this.indexedDB = request.result;
                 console.log('📦 IndexedDB initialized');
                 resolve(this.indexedDB);
             };
 
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-
-                // Create object stores
-                if (!db.objectStoreNames.contains('stockData')) {
-                    const stockStore = db.createObjectStore('stockData', { keyPath: 'id' });
-                    stockStore.createIndex('aisle', 'aisle', { unique: false });
-                    stockStore.createIndex('rack', 'rack', { unique: false });
-                    stockStore.createIndex('level', 'level', { unique: false });
-                    stockStore.createIndex('category', 'category', { unique: false });
-                    stockStore.createIndex('fillLevel', 'fill_level', { unique: false });
-                }
-
-                if (!db.objectStoreNames.contains('transactions')) {
-                    db.createObjectStore('transactions', { keyPath: 'id', autoIncrement: true });
-                }
-            };
+            request.onupgradeneeded = (event) => this._createStores(event.target.result);
         });
+    }
+
+    /**
+     * Create all required IndexedDB object stores
+     */
+    _createStores(db) {
+        // Create object stores
+        if (!db.objectStoreNames.contains('stockData')) {
+            const stockStore = db.createObjectStore('stockData', { keyPath: 'id' });
+            stockStore.createIndex('aisle', 'aisle', { unique: false });
+            stockStore.createIndex('rack', 'rack', { unique: false });
+            stockStore.createIndex('level', 'level', { unique: false });
+            stockStore.createIndex('category', 'category', { unique: false });
+            stockStore.createIndex('fillLevel', 'fill_level', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains('transactions')) {
+            db.createObjectStore('transactions', { keyPath: 'id', autoIncrement: true });
+        }
+
+        // Stores pour locations, agvs, tasks
+        if (!db.objectStoreNames.contains('locations')) {
+            db.createObjectStore('locations', { keyPath: 'id' });
+        }
+
+        if (!db.objectStoreNames.contains('agvs')) {
+            db.createObjectStore('agvs', { keyPath: 'id' });
+        }
+
+        if (!db.objectStoreNames.contains('tasks')) {
+            db.createObjectStore('tasks', { keyPath: 'id' });
+        }
     }
 
     /**

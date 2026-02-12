@@ -3,13 +3,12 @@
  * Creates pallets, boxes, and manages stock levels
  */
 
-// Fill level color mapping
+// Fill level color mapping (synced with 2D warehouse-2d.css)
 const FILL_COLORS = {
-    100: { color: 0x20c997, emissive: 0x20c997, emissiveIntensity: 0.5 },  // Green glow
-    75: { color: 0x90ee90, emissive: 0x90ee90, emissiveIntensity: 0.2 },   // Light green
-    50: { color: 0xf59f00, emissive: 0xf59f00, emissiveIntensity: 0.2 },   // Yellow
-    25: { color: 0xff9966, emissive: 0xff9966, emissiveIntensity: 0.2 },   // Orange
-    0: null  // Empty - no pallet shown
+    full:   { color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 0.5 },  // Green  (≥90%)
+    medium: { color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.3 },  // Amber  (25-89%)
+    low:    { color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.3 },  // Red    (1-24%)
+    empty:  null  // Hidden (0%)
 };
 
 // ABC category colors
@@ -63,16 +62,14 @@ class StockItem {
     updateVisuals() {
         if (!this.model) return;
 
-        // Determine color based on fill level
+        // Determine color based on fill level (same thresholds as 2D)
         let colorData;
         if (this.fillLevel >= 90) {
-            colorData = FILL_COLORS[100];
-        } else if (this.fillLevel >= 60) {
-            colorData = FILL_COLORS[75];
-        } else if (this.fillLevel >= 40) {
-            colorData = FILL_COLORS[50];
+            colorData = FILL_COLORS.full;      // Green  ≥90%
+        } else if (this.fillLevel >= 25) {
+            colorData = FILL_COLORS.medium;    // Amber  25-89%
         } else if (this.fillLevel > 0) {
-            colorData = FILL_COLORS[25];
+            colorData = FILL_COLORS.low;       // Red    1-24%
         } else {
             // Empty - hide model
             this.model.visible = false;
@@ -100,25 +97,13 @@ function createStock(scene, rackSystem) {
     const stockItems = [];
     const locations = rackSystem.locations;
 
-    // Fill 60-80% of locations with stock
-    const fillRate = 0.6 + Math.random() * 0.2;
-    const numStockItems = Math.floor(locations.length * fillRate);
-
-    // Shuffle locations for random distribution
-    const shuffled = [...locations].sort(() => Math.random() - 0.5);
-
-    for (let i = 0; i < numStockItems; i++) {
-        const location = shuffled[i];
+    // Fill ALL locations (100%) - real data comes from Supabase sync
+    for (let i = 0; i < locations.length; i++) {
+        const location = locations[i];
         
-        // Random fill level (weighted towards mid-high)
-        const fillLevel = Math.floor(Math.random() * 60 + 40); // 40-100%
-        
-        // Random ABC category (weighted)
-        let category;
-        const rand = Math.random();
-        if (rand < 0.2) category = 'A';
-        else if (rand < 0.5) category = 'B';
-        else category = 'C';
+        // Placeholder fill level - will be overridden by syncStockFromSupabase()
+        const fillLevel = 50;
+        const category = 'C';
 
         const stockItem = new StockItem(
             `STOCK_${location.id}`,
@@ -160,7 +145,7 @@ function createStock(scene, rackSystem) {
         stockItems.push(stockItem);
     }
 
-    console.log(`✓ Created ${stockItems.length} stock items (${Math.round(fillRate * 100)}% fill rate)`);
+    console.log(`✓ Created ${stockItems.length} stock items (100% coverage, awaiting Supabase sync)`);
     return stockItems;
 }
 
@@ -181,7 +166,9 @@ function createStockModel(stockItem) {
 
     // Create glow effect for fill level
     const glow = createFillLevelGlow(stockItem);
-    stockGroup.add(glow);
+    if (glow) {
+        stockGroup.add(glow);
+    }
     stockItem.glowMesh = glow;
 
     // Create ABC category indicator
@@ -300,7 +287,6 @@ function createStackedBoxes(fillLevel) {
     const boxesPerLayer = 4;
 
     for (let i = 0; i < numBoxes; i++) {
-        const sizeIndex = Math.floor(Math.random() * boxSizes.size);
         const size = boxSizes[i % boxSizes.length];
         
         const boxGeometry = new THREE.BoxGeometry(size.w, size.h, size.d);
@@ -332,15 +318,16 @@ function createStackedBoxes(fillLevel) {
  * Create fill level glow effect
  */
 function createFillLevelGlow(stockItem) {
+    // Skip glow for empty items
+    if (stockItem.fillLevel <= 0) return null;
+
     let colorData;
     if (stockItem.fillLevel >= 90) {
-        colorData = FILL_COLORS[100];
-    } else if (stockItem.fillLevel >= 60) {
-        colorData = FILL_COLORS[75];
-    } else if (stockItem.fillLevel >= 40) {
-        colorData = FILL_COLORS[50];
+        colorData = FILL_COLORS.full;       // Green  ≥90%
+    } else if (stockItem.fillLevel >= 25) {
+        colorData = FILL_COLORS.medium;     // Amber  25-89%
     } else {
-        colorData = FILL_COLORS[25];
+        colorData = FILL_COLORS.low;        // Red    1-24%
     }
 
     const glowMaterial = new THREE.MeshStandardMaterial({
@@ -639,4 +626,113 @@ function clearStockHighlights(stockItems) {
         }
     });
     console.log('✨ Highlights cleared');
+}
+
+/**
+ * Sync stock items with Supabase data
+ * Loads fill_level, sku, product_name, quality_tier from database
+ * and applies them to existing 3D stock items matched by location ID
+ * @param {Array<StockItem>} stockItems - 3D stock items from createStock()
+ * @returns {Promise<number>} Number of items synced
+ */
+async function syncStockFromSupabase(stockItems) {
+    try {
+        console.log('🔄 Syncing 3D stock with Supabase...');
+        
+        // Wait for Supabase
+        let attempts = 0;
+        while (!window.supabaseClient && attempts < 50) {
+            await new Promise(r => setTimeout(r, 100));
+            attempts++;
+        }
+        if (!window.supabaseClient) {
+            console.warn('⚠️ Supabase not available, keeping local stock data');
+            return 0;
+        }
+
+        const { data: dbStock, error } = await window.supabaseClient
+            .from('stock_items')
+            .select('*');
+
+        if (error) {
+            console.error('❌ Error fetching stock from Supabase:', error);
+            return 0;
+        }
+
+        if (!dbStock || dbStock.length === 0) {
+            console.warn('⚠️ No stock items in Supabase');
+            return 0;
+        }
+
+        console.log(`📦 Got ${dbStock.length} items from Supabase, matching to ${stockItems.length} 3D items...`);
+        
+        // Debug: show ID formats for matching
+        if (dbStock.length > 0 && stockItems.length > 0) {
+            console.log(`🔍 DB location_id format: "${dbStock[0].location_id}"`);
+            console.log(`🔍 3D location.id format: "${stockItems[0].location?.id}"`);
+        }
+
+        let synced = 0;
+        let notFound = 0;
+        dbStock.forEach(dbItem => {
+            // Match by location_id → location.id in 3D (format: R1B1L1)
+            const item3D = stockItems.find(s => s.location && s.location.id === dbItem.location_id);
+            
+            if (item3D) {
+                // Apply Supabase data to 3D item
+                if (dbItem.fill_level !== undefined && item3D.setFillLevel) {
+                    item3D.setFillLevel(dbItem.fill_level);
+                }
+                if (dbItem.category) item3D.category = dbItem.category;
+                if (dbItem.sku) item3D.sku = dbItem.sku;
+                if (dbItem.product_name) item3D.product_name = dbItem.product_name;
+                if (dbItem.quality_tier) item3D.quality_tier = dbItem.quality_tier;
+                item3D.supabaseId = dbItem.id; // Store DB id for future writes
+                synced++;
+            } else {
+                notFound++;
+                if (notFound <= 3) {
+                    console.warn(`⚠️ No 3D match for DB location_id="${dbItem.location_id}"`);
+                }
+            }
+        });
+
+        if (notFound > 3) {
+            console.warn(`⚠️ ${notFound} total DB items had no 3D match. Run REBUILD_FOR_3D.sql to align IDs.`);
+        }
+
+        console.log(`✅ Synced ${synced}/${dbStock.length} stock items from Supabase to 3D`);
+        return synced;
+    } catch (err) {
+        console.error('❌ syncStockFromSupabase error:', err);
+        return 0;
+    }
+}
+
+/**
+ * Push a stock item change from 3D to Supabase
+ * @param {StockItem} item - The 3D stock item that changed
+ */
+async function pushStockToSupabase(item) {
+    if (!window.supabaseClient || !item.location) return;
+    
+    try {
+        const updates = {
+            fill_level: item.fillLevel,
+            category: item.category
+        };
+
+        const { error } = await window.supabaseClient
+            .from('stock_items')
+            .update(updates)
+            .eq('location_id', item.location.id);
+
+        if (error) {
+            console.error(`❌ Failed to push stock ${item.location.id} to Supabase:`, error);
+        } else {
+            console.log(`📤 Pushed stock update [${item.location.id}] fill=${item.fillLevel} to Supabase`);
+        }
+    } catch (err) {
+        console.error('❌ pushStockToSupabase error:', err);
+    }
 }

@@ -500,13 +500,6 @@ class NavigationGrid {
     }
 
     /**
-     * Find available shipping node
-     */
-    findAvailableShippingNode() {
-        return this.shippingNodes.find(node => node.isAvailable()) || null;
-    }
-
-    /**
      * Find available RED ZONE node
      */
     findAvailableRedZoneNode() {

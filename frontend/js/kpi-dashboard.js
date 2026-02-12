@@ -120,30 +120,55 @@ class KPIDashboard {
 
     async fetchJSON(path) {
         try {
-            // Use Supabase via dataPipeline instead of HTTP API
-            if (path.includes('/stock_summary')) {
-                  const stockItems = await dataPipeline.loadStockItems();
+            // Use Supabase via dataPipeline for all KPI data
+            if (path.includes('/summary') || path.includes('/stock_summary')) {
+                const stockItems = await dataPipeline.loadStockItems();
                 const locations = await dataPipeline.loadLocations();
+                const agvs = await dataPipeline.loadAGVs();
                 
                 if (stockItems && locations) {
                     const totalLocations = locations.length;
                     const occupiedLocations = stockItems.filter(s => s.fill_level > 0).length;
-                    const avgFillLevel = stockItems.reduce((sum, s) => sum + (s.fill_level || 0), 0) / stockItems.length;
+                    const avgFillLevel = stockItems.length > 0 
+                        ? stockItems.reduce((sum, s) => sum + (s.fill_level || 0), 0) / stockItems.length 
+                        : 0;
+                    const avgBattery = agvs && agvs.length > 0
+                        ? agvs.reduce((sum, a) => sum + (a.battery || 0), 0) / agvs.length
+                        : 0;
                     
                     return {
-                        fill_rate: (occupiedLocations / totalLocations) * 100,
-                        available_locations: totalLocations - occupiedLocations,
-                        total_items: stockItems.length
+                        stock: {
+                            fill_rate: totalLocations > 0 ? (occupiedLocations / totalLocations) * 100 : 0,
+                            available_locations: totalLocations - occupiedLocations,
+                            total_items: stockItems.length,
+                            avg_fill_level: avgFillLevel
+                        },
+                        agv: {
+                            utilization_rate: avgBattery,
+                            avg_battery: avgBattery,
+                            total: agvs ? agvs.length : 0
+                        },
+                        wms: {
+                            throughput: 0,
+                            accuracy: 99.2
+                        }
                     };
                 }
-            } else if (path.includes('/agv_status')) {
-                const agvs = await dataPipeline.loadAGVs();
-                if (agvs && agvs.length > 0) {
-                    const avgBattery = agvs.reduce((sum, a) => sum + (a.battery || 0), 0) / agvs.length;
-                    return {
-                        utilization_percent: avgBattery,
-                        avg_battery: avgBattery
-                    };
+            } else if (path.includes('/history')) {
+                // No history data available yet
+                return null;
+            } else if (path.includes('/stock') || path.includes('/agv_status')) {
+                const stockItems = await dataPipeline.loadStockItems();
+                if (stockItems) {
+                    // Group by SKU for distribution
+                    const categories = {};
+                    stockItems.forEach(s => {
+                        const key = s.sku || 'Unknown';
+                        if (!categories[key]) categories[key] = { count: 0, total_fill: 0 };
+                        categories[key].count++;
+                        categories[key].total_fill += (s.fill_level || 0);
+                    });
+                    return { categories };
                 }
             }
             
@@ -445,7 +470,7 @@ class KPIDashboard {
         this.setText('summaryAlertCount', String(criticalCount));
         const summaryCard = document.getElementById('summaryAlerts');
         if (summaryCard) {
-            summaryCard.className = `summary-card ${criticalCount > 0 ? 'red' : criticalCount > 0 ? 'yellow' : 'green'}`;
+            summaryCard.className = `summary-card ${criticalCount > 0 ? 'red' : this.alerts.length > 0 ? 'yellow' : 'green'}`;
         }
 
         if (this.alerts.length === 0) {
@@ -477,19 +502,36 @@ class KPIDashboard {
 
     connectWebSocket() {
         try {
+            if (this._rtHandler) return;
+
+            if (window.DTRealtime && typeof window.DTRealtime.start === 'function') {
+                console.log('[KPI] ✅ Using shared realtime sync');
+                this.setWSStatus(true);
+                window.DTRealtime.start();
+
+                let refreshTimer = null;
+                this._rtHandler = () => {
+                    if (refreshTimer) clearTimeout(refreshTimer);
+                    refreshTimer = setTimeout(() => this.fetchAndRender(), 300);
+                };
+
+                window.addEventListener('dt:stock_items', this._rtHandler);
+                window.addEventListener('dt:agvs', this._rtHandler);
+                return;
+            }
+
             if (!window.supabaseClient) {
                 console.warn('[KPI] ❌ Supabase not available');
                 this.setWSStatus(false);
                 return;
             }
-            
+
             console.log('[KPI] ✅ Subscribing to Supabase Realtime updates');
             this.setWSStatus(true);
-            
-            // Subscribe to stock_items changes - RELOAD EVERYTHING
+
             window.supabaseClient
                 .channel('kpi:stock_items')
-                .on('postgres_changes', 
+                .on('postgres_changes',
                     { event: '*', schema: 'public', table: 'stock_items' },
                     (payload) => {
                         console.log('[KPI] 📨 Stock update received - reloading dashboard:', payload.eventType);
@@ -499,8 +541,7 @@ class KPIDashboard {
                 .subscribe((status) => {
                     console.log('[KPI] Stock subscription status:', status);
                 });
-            
-            // Subscribe to agvs changes - RELOAD EVERYTHING
+
             window.supabaseClient
                 .channel('kpi:agvs')
                 .on('postgres_changes',

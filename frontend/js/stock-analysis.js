@@ -1,5 +1,4 @@
 // Stock Analysis Page - Digital Twin WMS
-// Architecture 100% Docker locale (SANS Supabase)
 // Manages stock data visualization, filtering, and analysis
 
 let stockData = [];
@@ -59,7 +58,9 @@ async function loadStockData() {
                     level: loc.level_no || 0,
                     position: `R${loc.row_no}B${loc.bay_no}L${loc.level_no}`,
                     category: stock?.category || 'C',
-                    sku: stock?.id || '-',
+                    sku: stock?.sku || '-',
+                    product_name: stock?.product_name || '-',
+                    quality_tier: stock?.quality_tier || '-',
                     fillLevel: fillLevel,
                     occupied: occupied,
                     status: !stock || fillLevel === 0 ? 'Vide' : fillLevel < 25 ? 'Faible' : fillLevel < 75 ? 'Moyen' : fillLevel < 90 ? 'Bon' : 'Plein'
@@ -106,21 +107,31 @@ async function loadStockData() {
 // Connect to Supabase Realtime updates for live stock analysis
 function connectRealtimeUpdates() {
     try {
+        if (window.DTRealtime && typeof window.DTRealtime.start === 'function') {
+            console.log('[StockAnalysis] ✅ Using shared realtime sync');
+            window.DTRealtime.start();
+            window.addEventListener('dt:stock_items', () => {
+                loadStockData().then(() => {
+                    updateDisplay();
+                    console.log('[StockAnalysis] ✅ Table updated');
+                });
+            });
+            return;
+        }
+
         if (!window.supabaseClient) {
             console.warn('[StockAnalysis] Supabase not available for realtime');
             return;
         }
-        
+
         console.log('[StockAnalysis] ✅ Subscribing to Supabase Realtime updates');
-        
-        // Subscribe to stock_items changes - RELOAD ALL DATA on any change
+
         window.supabaseClient
             .channel('stockanalysis:stock_items')
             .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'stock_items' },
                 (payload) => {
                     console.log('[StockAnalysis] 📨 Real-time event received:', payload.eventType);
-                    // Reload all stock data to keep synchronized
                     loadStockData().then(() => {
                         updateDisplay();
                         console.log('[StockAnalysis] ✅ Table updated');
@@ -164,15 +175,16 @@ function updateStockItem(payload) {
 }
 
 // Generate sample stock data for demonstration
+// ⚠️ THIS SHOULD NOT BE USED - Stock should come from Supabase database with real SKUs
 function generateSampleStockData() {
     const data = [];
     const categories = ['A', 'B', 'C'];
-    const skuPrefixes = ['SKU', 'ITEM', 'PROD', 'REF'];
     
-    for (let aisle = 1; aisle <= 10; aisle++) {
-        for (let rack = 1; rack <= 8; rack++) {
+    // Match 3D structure: 3 rows × 5 bays × 4 levels = 60 locations
+    for (let aisle = 1; aisle <= 3; aisle++) {
+        for (let rack = 1; rack <= 5; rack++) {
             for (let level = 1; level <= 4; level++) {
-                const id = `A${aisle.toString().padStart(2, '0')}-R${rack.toString().padStart(2, '0')}-L${level}`;
+                const id = `R${aisle}B${rack}L${level}`;
                 const category = categories[Math.floor(Math.random() * categories.length)];
                 const fillLevel = Math.floor(Math.random() * 101);
                 const occupied = fillLevel > 0;
@@ -184,10 +196,12 @@ function generateSampleStockData() {
                     level: level,
                     position: `Allée ${aisle} - Rack ${rack} - Niveau ${level}`,
                     category: category,
-                    sku: occupied ? `${skuPrefixes[Math.floor(Math.random() * skuPrefixes.length)]}-${Math.floor(Math.random() * 9000) + 1000}` : '-',
+                    sku: '-', // SKU comes from database now
+                    product_name: '-',
+                    quality_tier: '-',
                     fillLevel: fillLevel,
                     occupied: occupied,
-                    status: fillLevel === 0 ? 'Vide' : fillLevel < 25 ? 'Faible' : fillLevel < 75 ? 'Moyen' : fillLevel < 90 ? 'Bon' : 'Plein'
+                    status: fillLevel === 0 ? 'Vide' : fillLevel < 25 ? 'Faible' : fillLevel < 90 ? 'Moyen' : 'Plein'
                 });
             }
         }
@@ -235,10 +249,10 @@ function updateTable() {
                     <div class="progress-fill" style="width: ${item.fillLevel}%"></div>
                     <span class="progress-text">${item.fillLevel}%</span>
                 </div>
-                <td><span class="status-badge">${item.status}</span></td>
             </td>
-            </tr>
-            `).join('');
+            <td><span class="status-badge">${item.status}</span></td>
+        </tr>
+        `).join('');
     
     document.getElementById('showing-count').textContent = pageData.length;
     document.getElementById('total-count').textContent = filteredData.length;

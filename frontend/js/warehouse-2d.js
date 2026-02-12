@@ -4,9 +4,9 @@
 
 // Warehouse structure - synchronized with 3D model (racks.js)
 const warehouseStructure = {
-    rows: 3,           // 3 allées (A1, A2, A3)
-    baysPerRow: 5,     // 5 racks par allée
-    levels: 4          // 4 niveaux par rack
+    rows: 3,           // 3 allées (1, 2, 3) - matches racks.js
+    baysPerRow: 5,     // 5 racks par allée (1, 2, 3, 4, 5)
+    levels: 4          // 4 niveaux par rack (1, 2, 3, 4)
 };
 
 let warehouseData = [];
@@ -76,15 +76,20 @@ async function loadWarehouseDataFromSupabase() {
                     level: loc.level_no,
                     position: `A${loc.row_no}R${loc.bay_no}L${loc.level_no}`,
                     category: stock?.category || 'C',
-                    sku: stock?.id?.substring(0, 8) || '-',
+                    sku: stock?.sku || '-',
+                    product_name: stock?.product_name || '-',
+                    quality_tier: stock?.quality_tier || '-',
+                    fill_level: fillLevel,  // IMPORTANT: Utiliser fill_level pas fillLevel
                     fillLevel: fillLevel,
                     occupied: fillLevel > 0,
-                    status: fillLevel === 0 ? 'empty' : fillLevel < 25 ? 'low' : fillLevel < 75 ? 'medium' : fillLevel < 90 ? 'good' : 'full'
+                    status: fillLevel === 0 ? 'empty' : fillLevel < 25 ? 'low' : fillLevel < 90 ? 'medium' : 'full'
                 };
             });
             
             filteredData = [...warehouseData];
             console.log(`✅ Loaded ${warehouseData.length} locations from Supabase`);
+            console.log('🔍 Sample stock data:', stockItems?.slice(0, 3));
+            console.log('🔍 Sample warehouse data:', warehouseData.slice(0, 3));
             
             // Save to IndexedDB cache
             await dataPipeline.saveData(warehouseData, 'stockData');
@@ -110,21 +115,36 @@ async function loadWarehouseDataFromSupabase() {
 // Connect to Supabase Realtime updates for live warehouse map
 function connectRealtimeUpdates() {
     try {
+        if (window.DTRealtime && typeof window.DTRealtime.start === 'function') {
+            console.log('[2D] ✅ Using shared realtime sync');
+            window.DTRealtime.start();
+
+            const refresh = () => {
+                loadWarehouseDataFromSupabase().then(() => {
+                    renderWarehouse();
+                    updateStatistics();
+                    console.log('[2D] ✅ Warehouse 2D updated');
+                });
+            };
+
+            window.addEventListener('dt:stock_items', refresh);
+            window.addEventListener('dt:locations', refresh);
+            return;
+        }
+
         if (!window.supabaseClient) {
             console.warn('[2D] Supabase not available for realtime');
             return;
         }
-        
+
         console.log('[2D] ✅ Subscribing to Supabase Realtime updates');
-        
-        // Subscribe to stock_items changes - RELOAD ALL DATA on any change
+
         window.supabaseClient
             .channel('warehouse2d:stock_items')
             .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'stock_items' },
                 (payload) => {
                     console.log('[2D] 📨 Real-time event received:', payload.eventType, payload.new);
-                    // On any change, reload all data to stay in sync
                     loadWarehouseDataFromSupabase().then(() => {
                         renderWarehouse();
                         updateStatistics();
@@ -136,7 +156,6 @@ function connectRealtimeUpdates() {
                 console.log('[2D] Realtime subscription status:', status);
             });
             
-        // Subscribe to locations changes
         window.supabaseClient
             .channel('warehouse2d:locations')
             .on('postgres_changes',
@@ -168,9 +187,11 @@ function updateWarehouseItem(payload) {
         item.occupied = item.fillLevel > 0;
         item.status = item.fillLevel === 0 ? 'empty' : 
                       item.fillLevel < 25 ? 'low' : 
-                      item.fillLevel < 75 ? 'medium' : 
-                      item.fillLevel < 90 ? 'good' : 'full';
+                      item.fillLevel < 90 ? 'medium' : 'full';
         item.category = record.category || item.category;
+        item.sku = record.sku || '-';
+        item.product_name = record.product_name || '-';
+        item.quality_tier = record.quality_tier || '-';
         
         // Update filtered data if item matches current filters
         const filteredItem = filteredData.find(w => w.id === record.location_id);
@@ -229,8 +250,9 @@ function handleCSVUpload(event) {
                 level: parseInt(item.level) || parseInt(item.niveau) || 0,
                 sku: item.sku || item.référence || '-',
                 product_name: item.product_name || item.produit || 'Unknown',
+                quality_tier: item.quality_tier || '-',
                 fill_level: Math.min(100, Math.max(0, parseInt(item.fill_level) || parseInt(item.remplissage) || 0)),
-                id: `A${String(item.aisle || item.allée || 0).padStart(2, '0')}-R${String(item.rack || 0).padStart(2, '0')}-L${item.level || item.niveau || 0}`
+                id: `R${item.aisle || item.allée || 0}B${item.rack || 0}L${item.level || item.niveau || 0}`
             })).filter(item => item.aisle && item.rack && item.level);
             
             if (transformedData.length > 0) {
@@ -296,7 +318,7 @@ function parseCSV(csv) {
                 sku: obj.sku || `-`,
                 product_name: obj.product_name || 'Unknown',
                 fill_level: Math.min(100, Math.max(0, parseInt(obj.fill_level) || 0)),
-                id: `A${obj.aisle.padStart(2, '0')}-R${obj.rack.padStart(2, '0')}-L${obj.level}`
+                id: `R${obj.aisle}B${obj.rack}L${obj.level}`
             });
         }
     }
@@ -305,25 +327,26 @@ function parseCSV(csv) {
 }
 
 // Generate sample warehouse data
+// ⚠️ DEPRECATED - Should load from Supabase instead
 async function generateSampleData() {
+    console.warn('⚠️ generateSampleData called - This should not happen! Data should come from Supabase.');
     const startTime = performance.now();
     warehouseData = [];
-    const skuPrefixes = ['SKU', 'ITEM', 'PROD', 'REF'];
-    const products = ['Product A', 'Product B', 'Product C', 'Product D', 'Product E'];
     
     // Use warehouse structure from 3D model
     for (let aisle = 1; aisle <= warehouseStructure.rows; aisle++) {
         for (let rack = 1; rack <= warehouseStructure.baysPerRow; rack++) {
             for (let level = 1; level <= warehouseStructure.levels; level++) {
-                const id = `A${aisle.toString().padStart(2, '0')}-R${rack.toString().padStart(2, '0')}-L${level}`;
+                const id = `R${aisle}B${rack}L${level}`;
                 const fillLevel = Math.floor(Math.random() * 101);
                 
                 warehouseData.push({
                     aisle: aisle,
                     rack: rack,
                     level: level,
-                    sku: fillLevel > 0 ? `${skuPrefixes[Math.floor(Math.random() * skuPrefixes.length)]}-${Math.floor(Math.random() * 9000) + 1000}` : '-',
-                    product_name: fillLevel > 0 ? products[Math.floor(Math.random() * products.length)] : 'Empty',
+                    sku: '-',  // SKU should come from Supabase
+                    product_name: 'No Data',
+                    quality_tier: '-',
                     fill_level: fillLevel,
                     id: id
                 });
@@ -454,11 +477,11 @@ function renderWarehouse() {
             rackLabel.textContent = `Rack ${rackNum}`;
             rackEl.appendChild(rackLabel);
             
-            // Render levels
+            // Render levels (top to bottom: L4 at top, L1 at bottom — matches 3D)
             const levelsContainer = document.createElement('div');
             levelsContainer.className = 'levels-container';
             
-            for (let level = 1; level <= warehouseStructure.levels; level++) {
+            for (let level = warehouseStructure.levels; level >= 1; level--) {
                 const item = aisles[aisleNum][rackNum].find(i => i.level === level);
                 const levelEl = document.createElement('div');
                 levelEl.className = `level level-${level}`;
@@ -517,11 +540,16 @@ function getStatusColor(fillLevel) {
 
 // Show details modal
 function showDetails(item) {
+    console.log('🔍 Showing details for item:', item);  // DEBUG
+    
     const modal = document.getElementById('detail-modal');
     const modalTitle = document.getElementById('modal-title');
     const modalDetails = document.getElementById('modal-details');
     
     modalTitle.textContent = `Détails - Allée ${item.aisle}, Rack ${item.rack}, Niveau ${item.level}`;
+    
+    // Use both fill_level and fillLevel for compatibility
+    const fillLevelValue = item.fill_level || item.fillLevel || 0;
     
     modalDetails.innerHTML = `
         <div class="detail-grid">
@@ -531,28 +559,32 @@ function showDetails(item) {
             </div>
             <div class="detail-item">
                 <label>SKU:</label>
-                <value>${item.sku}</value>
+                <value>${item.sku || '-'}</value>
             </div>
             <div class="detail-item">
                 <label>Produit:</label>
-                <value>${item.product_name}</value>
+                <value>${item.product_name || '-'}</value>
+            </div>
+            <div class="detail-item">
+                <label>Catégorie:</label>
+                <value>${item.quality_tier || '-'}</value>
             </div>
             <div class="detail-item">
                 <label>Niveau de remplissage:</label>
-                <value>${item.fill_level}%</value>
+                <value>${fillLevelValue}%</value>
             </div>
             <div class="detail-item">
                 <label>Statut:</label>
                 <value>
-                    <span class="status-badge" style="background: ${getStatusColor(item.fill_level)}; padding: 4px 8px; border-radius: 4px; color: white; display: inline-block;">
-                        ${getStockStatus(item.fill_level).toUpperCase()}
+                    <span class="status-badge" style="background: ${getStatusColor(fillLevelValue)}; padding: 4px 8px; border-radius: 4px; color: white; display: inline-block;">
+                        ${getStockStatus(fillLevelValue).toUpperCase()}
                     </span>
                 </value>
             </div>
             <div class="detail-item full-width">
                 <label>Progression:</label>
                 <div class="progress-bar-full">
-                    <div class="progress-fill" style="width: ${item.fill_level}%; background: ${getStatusColor(item.fill_level)};"></div>
+                    <div class="progress-fill" style="width: ${fillLevelValue}%; background: ${getStatusColor(fillLevelValue)};"></div>
                 </div>
             </div>
         </div>

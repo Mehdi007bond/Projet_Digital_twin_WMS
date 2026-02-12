@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Cache - Digital Twin WMS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            margin-top: 0;
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        button.danger {
+            background: #ef4444;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear Cache - Digital Twin WMS</h1>
+        <p>Utilisez cet outil pour vider tous les caches et recharger les données fraîches de Supabase.</p>
+        
+        <button onclick="clearLocalStorage()">Clear LocalStorage</button>
+        <button onclick="clearIndexedDB()">Clear IndexedDB</button>
+        <button onclick="clearSessionStorage()">Clear SessionStorage</button>
+        <button class="danger" onclick="clearAll()">Clear ALL</button>
+        
+        <div class="status" id="status">Prêt...</div>
+        
+        <hr style="margin: 30px 0; border-color: rgba(255,255,255,0.3);">
+        
+        <h3>Retourner à:</h3>
+        <button onclick="location.href='index.html'">Vue 3D</button>
+        <button onclick="location.href='warehouse-2d.html'">Vue 2D</button>
+        <button onclick="location.href='management.html'">Management</button>
+    </div>
+
+    <script>
+        const status = document.getElementById('status');
+
+        function log(msg) {
+            status.textContent += msg + '\n';
+        }
+
+        function clearLocalStorage() {
+            status.textContent = '';
+            try {
+                const count = localStorage.length;
+                localStorage.clear();
+                log(`✅ LocalStorage cleared (${count} items removed)`);
+            } catch (e) {
+                log(`❌ Error clearing LocalStorage: ${e.message}`);
+            }
+        }
+
+        function clearSessionStorage() {
+            status.textContent = '';
+            try {
+                const count = sessionStorage.length;
+                sessionStorage.clear();
+                log(`✅ SessionStorage cleared (${count} items removed)`);
+            } catch (e) {
+                log(`❌ Error clearing SessionStorage: ${e.message}`);
+            }
+        }
+
+        async function clearIndexedDB() {
+            status.textContent = '';
+            try {
+                // Get all databases
+                const dbs = await window.indexedDB.databases();
+                log(`Found ${dbs.length} IndexedDB databases:`);
+                
+                for (const db of dbs) {
+                    log(`  - ${db.name} (v${db.version})`);
+                }
+                
+                // Delete DataPipelineDB (used by our app)
+                const dbName = 'DataPipelineDB';
+                const request = window.indexedDB.deleteDatabase(dbName);
+                
+                request.onsuccess = () => {
+                    log(`✅ IndexedDB '${dbName}' deleted successfully`);
+                };
+                
+                request.onerror = () => {
+                    log(`❌ Error deleting IndexedDB '${dbName}'`);
+                };
+                
+                request.onblocked = () => {
+                    log(`⚠️ IndexedDB '${dbName}' deletion blocked (close all tabs)`);
+                };
+            } catch (e) {
+                log(`❌ Error: ${e.message}`);
+            }
+        }
+
+        async function clearAll() {
+            status.textContent = '🧹 Clearing all caches...\n\n';
+            
+            clearLocalStorage();
+            log('');
+            clearSessionStorage();
+            log('');
+            await clearIndexedDB();
+            
+            log('\n✅ All caches cleared!');
+            log('\n⚠️ Refresh the page or navigate to a view to reload fresh data.');
+        }
+
+        // Display initial cache status
+        window.addEventListener('DOMContentLoaded', async () => {
+            log('Current cache status:');
+            log(`  LocalStorage: ${localStorage.length} items`);
+            log(`  SessionStorage: ${sessionStorage.length} items`);
+            
+            try {
+                const dbs = await window.indexedDB.databases();
+                log(`  IndexedDB: ${dbs.length} databases`);
+            } catch (e) {
+                log(`  IndexedDB: Unable to enumerate`);
+            }
+        });
+    </script>
+</body>
+</html>

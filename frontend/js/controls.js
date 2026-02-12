@@ -548,7 +548,8 @@ function setupAnalysisPageButton() {
                     level: item.level,
                     position: `Allée ${item.aisle} - Rack ${item.rack} - Niveau ${item.level}`,
                     category: item.category,
-                    sku: item.sku || '-',
+                    sku: item.sku || (item.stock_data && item.stock_data.sku) || '-',
+                    product_name: item.product_name || (item.stock_data && item.stock_data.product_name) || '-',
                     fillLevel: item.fillLevel,
                     occupied: item.fillLevel > 0,
                     status: item.fillLevel === 0 ? 'Vide' : 

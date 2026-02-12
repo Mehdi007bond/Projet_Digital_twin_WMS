@@ -55,7 +55,7 @@ const DEMO_DATA = {
     // Sample AGVs
     agvs: [
         {
-            id: 'agv-001',
+            id: 'AGV-001',
             name: 'AGV-001',
             x_m: 15,
             y_m: 0.5,
@@ -68,7 +68,7 @@ const DEMO_DATA = {
             updated_at: new Date().toISOString()
         },
         {
-            id: 'agv-002',
+            id: 'AGV-002',
             name: 'AGV-002',
             x_m: 25,
             y_m: 0.5,
@@ -81,7 +81,7 @@ const DEMO_DATA = {
             updated_at: new Date().toISOString()
         },
         {
-            id: 'agv-003',
+            id: 'AGV-003',
             name: 'AGV-003',
             x_m: 35,
             y_m: 0.5,
@@ -95,20 +95,27 @@ const DEMO_DATA = {
         }
     ],
 
-    // Sample Stock Items (creates 100 items)
+    // Sample Stock Items (creates 60 items matching 3D structure)
     createStockItems: function() {
         const items = [];
-        const categories = ['Electronics', 'Furniture', 'Tools', 'Textiles', 'Industrial'];
+        const skus = ['FL-ECO', 'FL-MED', 'FL-LUX', 'BL-ECO', 'BL-MED', 'BL-LUX', 'MC-ECO', 'MC-MED', 'MC-LUX'];
+        let idx = 0;
         
-        for (let i = 0; i < 100; i++) {
-            items.push({
-                id: `stock-${i + 1}`,
-                location_id: `loc-${Math.floor(i / 5) + 1}`,
-                fill_level: Math.floor(Math.random() * 100),
-                category: categories[Math.floor(Math.random() * categories.length)],
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
+        for (let row = 1; row <= 3; row++) {
+            for (let bay = 1; bay <= 5; bay++) {
+                for (let level = 1; level <= 4; level++) {
+                    items.push({
+                        id: `stock-${idx + 1}`,
+                        location_id: `R${row}B${bay}L${level}`,
+                        fill_level: Math.floor(Math.random() * 100),
+                        category: 'C',
+                        sku: skus[idx % 9],
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    });
+                    idx++;
+                }
+            }
         }
         return items;
     },

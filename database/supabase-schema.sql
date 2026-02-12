@@ -92,6 +92,9 @@ CREATE TABLE IF NOT EXISTS stock_items (
     location_id TEXT NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
     fill_level INT NOT NULL DEFAULT 0,
     category TEXT NOT NULL DEFAULT 'general',
+    sku TEXT,
+    product_name TEXT,
+    quality_tier TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -131,12 +134,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE agvs;
 
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
-    agv_id TEXT REFERENCES agvs(id),
+    agv_id TEXT REFERENCES agvs(id) ON DELETE SET NULL,
     task_type TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     priority INT NOT NULL DEFAULT 1,
-    pickup_location_id TEXT,
-    dropoff_location_id TEXT,
+    pickup_location_id TEXT REFERENCES locations(id) ON DELETE SET NULL,
+    dropoff_location_id TEXT REFERENCES locations(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     started_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,

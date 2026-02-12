@@ -23,6 +23,7 @@ let navigationGridVisual = null;
 let fps = 0;
 let fpsCounter = 0;
 let lastFpsUpdate = 0;
+let frameCount = 0;  // Throttle counter for expensive operations
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Initialization
@@ -76,13 +77,33 @@ function init() {
     console.log('🎮 Setting up controls...');
     initUIControls(camera, controls, renderer);
 
-    // Initialize WebSocket connection (demo mode)
-    // Initialize Supabase Realtime connection
+    // Initialize Supabase and sync stock from database
     console.log('🔌 Connecting to Supabase Realtime...');
-    
-    // On n'a plus besoin de passer d'arguments car initSupabaseRealtime 
-    // utilise les variables globales (accessibles après publishGlobals())
-    initSupabaseRealtime();
+    initSupabase().then(() => {
+        console.log('✅ Supabase client ready');
+        
+        // Sync 3D stock with Supabase data (fill levels, SKUs, etc.)
+        syncStockFromSupabase(stockItems).then(synced => {
+            console.log(`✅ 3D scene synced with Supabase (${synced} items)`);
+            if (synced === 0) {
+                console.warn('⚠️ 0 items synced! Make sure REBUILD_FOR_3D.sql was executed in Supabase.');
+                console.warn('⚠️ DB location_id format must match 3D format: R1B1L1, R1B2L1, etc.');
+            }
+        }).catch(err => {
+            console.error('❌ syncStockFromSupabase failed:', err);
+        });
+        
+        // Start realtime subscriptions for live updates (3D-specific)
+        initSupabaseRealtime();
+        
+        // Start shared realtime sync for cross-page events
+        if (window.DTRealtime) {
+            window.DTRealtime.start();
+            console.log('✅ DTRealtime shared sync started');
+        }
+    }).catch(err => {
+        console.error('❌ Supabase init failed:', err);
+    });
 
     // Setup window resize handler
     window.addEventListener('resize', onWindowResize, false);
@@ -270,12 +291,13 @@ function initLights() {
 function animate() {
     animationFrameId = requestAnimationFrame(animate);
 
+    // Controls always update (camera interaction even when paused)
+    controls.update();
+
     if (!isPaused) {
         // Get delta time
         deltaTime = clock.getDelta() * simulationSpeed;
-
-        // Update controls
-        controls.update();
+        frameCount++;
 
         // Update Task Queue Manager - dispatches tasks to available AGVs
         if (taskQueueManager) {
@@ -287,19 +309,19 @@ function animate() {
             updateAGVs(agvs, deltaTime);
         }
 
-        // Update stock visualization
-        if (stockItems) {
-            updateStockVisuals(stockItems, deltaTime);
+        // Update stock visualization (glow pulse) - every 3rd frame is enough
+        if (stockItems && frameCount % 3 === 0) {
+            updateStockVisuals(stockItems, deltaTime * 3);
         }
 
-        // Update FPS counter
+        // Update FPS counter (already self-throttled to 1/s)
         updateFPS();
 
-        // Update object count
-        updateObjectCount();
-        
-        // Update statistics display
-        updateStatsDisplay();
+        // Expensive DOM/traverse updates: every 30 frames (~0.5s at 60fps)
+        if (frameCount % 30 === 0) {
+            updateObjectCount();
+            updateStatsDisplay();
+        }
     }
 
     // Render the scene
@@ -337,11 +359,14 @@ function updateFPS() {
 /**
  * Update object count display
  */
+let _cachedObjectCount = 0;
 function updateObjectCount() {
     const objectCountElement = document.getElementById('object-count');
-    if (objectCountElement) {
-        let count = 0;
-        scene.traverse(() => count++);
+    if (!objectCountElement) return;
+    let count = 0;
+    scene.traverse(() => count++);
+    if (count !== _cachedObjectCount) {
+        _cachedObjectCount = count;
         objectCountElement.textContent = count;
     }
 }
