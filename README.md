@@ -1,554 +1,150 @@
-# 🏭 Digital Twin WMS - Supabase Realtime Edition
+# 🏭 Digital Twin WMS - Warehouse Management System
 
-### *Real-time 3D Warehouse Visualization with Supabase Realtime*
-
-[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge)](https://github.com/Mehdi007bond/Projet_Digital_twin_WMS)
-[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
-[![Supabase](https://img.shields.io/badge/Supabase-Realtime-4FC3F7?style=for-the-badge)](https://supabase.com)
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
----
-
-## ✨ What's New (v2.0)
-
-- ✅ **100% Supabase Realtime** - No Docker backend needed
-- ✅ **Auto-scaling** - Managed cloud infrastructure
-- ✅ **Zero maintenance** - Focus on features, not ops
-- ✅ **Multi-region ready** - Global deployment
-- ✅ **< 100ms latency** - Production-grade performance
+A comprehensive digital twin solution for warehouse management featuring real-time 3D visualization, AGV fleet management, stock tracking, and advanced analytics.
 
 ---
 
 ## 📋 Table of Contents
 
-- [📖 About The Project](#-about-the-project)
-- [✨ Key Features](#-key-features)
-- [🏗️ System Architecture](#️-system-architecture)
-- [🎮 3D Digital Twin Features](#-3d-digital-twin-features)
-- [📊 KPIs & Metrics](#-kpis--metrics)
-- [🗺️ Project Roadmap](#️-project-roadmap)
-- [📁 Project Structure](#-project-structure)
-- [🛠️ Tech Stack](#️-tech-stack)
-- [🚀 Getting Started](#-getting-started)
-- [📈 Stock Management](#-stock-management)
-- [🤖 AGV System](#-agv-system)
-- [🔗 API Documentation](#-api-documentation)
-- [🧪 Testing](#-testing)
-- [🤝 Contributing](#-contributing)
-- [📜 License](#-license)
-- [👥 Team](#-team)
-- [🙏 Acknowledgments](#-acknowledgments)
+- [About](#about)
+- [Key Features](#key-features)
+- [System Architecture](#system-architecture)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Pages & Features](#pages--features)
+- [Stock Management](#stock-management)
+- [AGV Fleet System](#agv-fleet-system)
+- [Database Schema](#database-schema)
+- [KPIs & Metrics](#kpis--metrics)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## 📖 About The Project
+## 🎯 About
 
-<div align="center">
+The **Digital Twin WMS** is a modern, serverless warehouse management system that provides real-time visibility into warehouse operations through an interactive 3D interface. Built for INSA engineering students, this project demonstrates cutting-edge web technologies applied to industrial logistics.
 
-### 🎯 Vision
+### Why Digital Twin?
 
-*Transform warehouse operations through intelligent visualization and automation*
-
-</div>
-
-The **Digital Twin WMS** project creates a real-time, interactive 3D replica of a warehouse environment. This digital twin synchronizes with actual warehouse operations, providing:
-
-| Goal | Description |
-|------|-------------|
-| 🔍 **Visibility** | Complete real-time view of all warehouse operations |
-| 🤖 **Automation** | Intelligent AGV fleet management and optimization |
-| 📊 **Analytics** | Comprehensive KPI tracking and performance analysis |
-| 🎯 **Optimization** | Data-driven decision making for improved efficiency |
-| 🔮 **Simulation** | Test scenarios before real-world implementation |
-
-### 🌟 Why Digital Twin for WMS?
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                                                                          │
-│    📦 TRADITIONAL WAREHOUSE          🏭 DIGITAL TWIN WAREHOUSE          │
-│    ─────────────────────────         ──────────────────────────          │
-│                                                                          │
-│    ❌ Limited visibility             ✅ 360° real-time view              │
-│    ❌ Reactive decisions             ✅ Proactive optimization           │
-│    ❌ Manual AGV coordination        ✅ AI-powered fleet control         │
-│    ❌ Delayed KPI reporting          ✅ Instant performance metrics      │
-│    ❌ Risky change testing           ✅ Safe simulation environment      │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+A digital twin creates a virtual replica of physical warehouse operations, enabling:
+- **Real-time Monitoring**: Visualize AGV movements, stock levels, and operations as they happen
+- **Predictive Analytics**: Analyze patterns and optimize warehouse efficiency
+- **Training & Simulation**: Safe environment for testing scenarios without physical risks
+- **Data-Driven Decisions**: Comprehensive KPIs and metrics at your fingertips
 
 ---
 
 ## ✨ Key Features
 
-<table>
-<tr>
-<td width="50%">
-
-### 🏭 3D Warehouse Visualization
-- Photorealistic warehouse rendering
-- Real-time stock level display
-- Zone-based color coding
-- Interactive camera controls
-- Day/night lighting modes
-
-</td>
-<td width="50%">
+### 🎨 3D Visualization
+- Interactive Three.js-powered 3D warehouse model
+- Real-time AGV position tracking and path visualization
+- Dynamic rack and stock visualization with color-coded status
+- Smooth camera controls and multiple viewing angles
 
 ### 🤖 AGV Fleet Management
-- Real-time AGV tracking
-- Intelligent path planning (A*)
-- Collision avoidance system
-- Mission queue optimization
-- Battery management
-
-</td>
-</tr>
-<tr>
-<td width="50%">
+- Multi-AGV coordination and tracking
+- Battery level monitoring and alerts
+- Task assignment and priority management
+- Collision detection and path optimization
 
 ### 📦 Stock Management
-- Live inventory tracking
-- FIFO/LIFO/ABC strategies
-- Low stock alerts
-- Location optimization
-- Pallet visualization
-
-</td>
-<td width="50%">
+- Real-time inventory tracking across racks and locations
+- Color-coded stock status (Green: optimal, Orange: low, Red: critical)
+- Hierarchical location system (Rack → Shelf → Position)
+- Automated alerts for low stock and overstocking
 
 ### 📊 KPI Dashboard
-- Real-time performance metrics
+- Real-time operational metrics
+- Stock turnover and fill rates
+- AGV utilization and efficiency metrics
 - Historical trend analysis
-- Customizable alerts
-- Export capabilities
-- Comparison reports
 
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### 🔄 Real-time Synchronization
-- WebSocket live updates
-- Sub-second latency
-- Offline mode support
-- Auto-reconnection
-- Event logging
-
-</td>
-<td width="50%">
-
-### 🎮 Simulation Mode
-- Scenario testing
-- What-if analysis
-- Speed control (0.5x - 4x)
-- Historical playback
-- Performance prediction
-
-</td>
-</tr>
-</table>
+### ⚡ Real-time Synchronization
+- Supabase Realtime WebSocket integration
+- Instant updates across all connected clients
+- Optimistic UI updates with conflict resolution
+- Efficient pub/sub messaging system
 
 ---
 
 ## 🏗️ System Architecture
 
-```mermaid
-graph TB
-    subgraph Frontend["🖥️ FRONTEND - Browser"]
-        A[🎮 Three.js<br/>3D Engine]
-        B[📊 Dashboard<br/>KPIs & Charts]
-        C[🎛️ Control Panel<br/>User Interface]
-    end
-    
-    subgraph Communication["🔄 COMMUNICATION LAYER"]
-        D[WebSocket<br/>Real-time]
-        E[REST API<br/>CRUD Operations]
-    end
-    
-    subgraph Backend["⚙️ BACKEND - Python"]
-        F[🚀 FastAPI<br/>API Server]
-        G[📋 WMS Logic<br/>Business Rules]
-        H[🤖 AGV Controller<br/>Fleet Management]
-        I[⚡ Simulation<br/>SimPy Engine]
-    end
-    
-    subgraph Data["💾 DATA LAYER"]
-        J[(🐘 PostgreSQL<br/>Main Database)]
-        K[(⚡ Redis<br/>Cache & Queue)]
-    end
-    
-    subgraph External["🔌 EXTERNAL SYSTEMS"]
-        L[🏭 Factory I/O<br/>PLC Simulation]
-        M[📡 IoT Sensors<br/>Real Devices]
-    end
-    
-    A <--> D
-    B <--> E
-    C <--> D
-    D <--> F
-    E <--> F
-    F --> G
-    F --> H
-    F --> I
-    G <--> J
-    H <--> K
-    I <--> J
-    F <-.-> L
-    F <-.-> M
-    
-    style A fill:#4361ee,stroke:#333,stroke-width:2px,color:#fff
-    style B fill:#3f8efc,stroke:#333,stroke-width:2px,color:#fff
-    style C fill:#2ec4b6,stroke:#333,stroke-width:2px,color:#fff
-    style F fill:#ff6b6b,stroke:#333,stroke-width:2px,color:#fff
-    style J fill:#845ef7,stroke:#333,stroke-width:2px,color:#fff
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     CLIENT BROWSER                          │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │         Frontend Application (Vanilla JS)             │  │
+│  │                                                       │  │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │  │
+│  │  │ Three.js │  │   HTML   │  │  Supabase Client │  │  │
+│  │  │ 3D Scene │  │   Pages  │  │   (@supabase/    │  │  │
+│  │  │          │  │          │  │   supabase-js)   │  │  │
+│  │  └────┬─────┘  └────┬─────┘  └────────┬─────────┘  │  │
+│  │       │             │                  │            │  │
+│  │       └─────────────┴──────────────────┘            │  │
+│  │                     │                                │  │
+│  └─────────────────────┼────────────────────────────────┘  │
+└────────────────────────┼───────────────────────────────────┘
+                         │
+                         │ HTTPS / WebSocket
+                         │
+┌────────────────────────▼───────────────────────────────────┐
+│                  SUPABASE CLOUD                            │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              PostgreSQL Database                     │  │
+│  │  ┌────────┐  ┌────────┐  ┌──────────┐  ┌─────────┐ │  │
+│  │  │ Stocks │  │  AGVs  │  │  Racks   │  │  Views  │ │  │
+│  │  │ Table  │  │ Table  │  │  Table   │  │         │ │  │
+│  │  └────────┘  └────────┘  └──────────┘  └─────────┘ │  │
+│  │                                                      │  │
+│  │  ┌────────────────────────────────────────────────┐ │  │
+│  │  │     Row Level Security (RLS) Policies          │ │  │
+│  │  └────────────────────────────────────────────────┘ │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │            Realtime Server (WebSocket)               │  │
+│  │         - Table Change Notifications                 │  │
+│  │         - Pub/Sub Channels                           │  │
+│  │         - Broadcast Messages                         │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 📡 Data Flow
-
-```mermaid
-sequenceDiagram
-    participant UI as 🖥️ Browser
-    participant WS as 🔄 WebSocket
-    participant API as ⚙️ FastAPI
-    participant WMS as 📋 WMS Logic
-    participant AGV as 🤖 AGV Controller
-    participant DB as 💾 Database
-    
-    UI->>WS: Connect
-    WS-->>UI: Connection Confirmed
-    
-    loop Every 100ms
-        AGV->>DB: Get AGV Positions
-        DB-->>AGV: Position Data
-        AGV->>WS: Broadcast Positions
-        WS-->>UI: Update 3D View
-    end
-    
-    UI->>API: Create Order
-    API->>WMS: Process Order
-    WMS->>AGV: Assign Mission
-    AGV->>DB: Save Mission
-    AGV->>WS: Mission Update
-    WS-->>UI: Show New Mission
-```
+**Key Points:**
+- ✅ **Serverless Architecture**: No backend server required
+- ✅ **Direct Database Access**: Frontend uses Supabase client library
+- ✅ **Real-time Updates**: WebSocket-based pub/sub for instant synchronization
+- ✅ **Secure**: Row Level Security policies protect data access
 
 ---
 
-## 🎮 3D Digital Twin Features
+## 🛠️ Tech Stack
 
-### 🏭 Warehouse Environment
+### Frontend
+- **Three.js r137**: 3D visualization and rendering
+- **Vanilla JavaScript ES6+**: Core application logic
+- **HTML5 & CSS3**: Modern web standards
+- **Supabase JS Client v2**: Direct database and realtime access
 
-<table>
-<tr>
-<td width="33%" align="center">
+### Backend (Serverless)
+- **Supabase**: Backend-as-a-Service platform
+  - PostgreSQL 15 database
+  - Realtime WebSocket server
+  - Authentication & authorization
+  - Row Level Security (RLS)
 
-**📐 Structure**
-```
-Dimensions: 50m × 30m
-Height: 10m
-Zones: 4
-Dock Doors: 6
-```
-
-</td>
-<td width="33%" align="center">
-
-**💡 Lighting**
-```
-Ambient: Soft fill
-Directional: Sun
-Spotlights: Ceiling
-Point lights: Accents
-```
-
-</td>
-<td width="33%" align="center">
-
-**🎨 Quality**
-```
-Shadows: PCFSoft
-Anti-aliasing: FXAA
-Tone mapping: ACES
-Post-processing: ✓
-```
-
-</td>
-</tr>
-</table>
-
-### 🗺️ Zone Layout
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              WAREHOUSE LAYOUT                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────────┐                                    ┌──────────────┐   │
-│  │              │                                    │              │   │
-│  │  🟢 RECEPTION │   ═══════════════════════════    │ 🔵 EXPEDITION │   │
-│  │    ZONE      │          MAIN AISLE               │    ZONE      │   │
-│  │              │                                    │              │   │
-│  └──────────────┘                                    └──────────────┘   │
-│                                                                          │
-│  ╔══════════╗  ╔══════════╗  ╔══════════╗  ╔══════════╗  ╔══════════╗  │
-│  ║  RACK A1 ║  ║  RACK A2 ║  ║  RACK A3 ║  ║  RACK A4 ║  ║  RACK A5 ║  │
-│  ╠══════════╣  ╠══════════╣  ╠══════════╣  ╠══════════╣  ╠══════════╣  │
-│  ║▓▓▓▓▓▓▓▓▓▓║  ║▓▓▓▓░░░░░░║  ║▓▓▓▓▓▓▓▓▓▓║  ║░░░░░░░░░░║  ║▓▓▓▓▓▓░░░░║  │
-│  ╠══════════╣  ╠══════════╣  ╠══════════╣  ╠══════════╣  ╠══════════╣  │
-│  ║▓▓▓▓▓▓░░░░║  ║▓▓▓▓▓▓▓▓▓▓║  ║▓▓▓▓▓▓▓▓▓▓║  ║▓▓▓▓▓▓▓▓▓▓║  ║▓▓▓▓▓▓▓▓▓▓║  │
-│  ╚══════════╝  ╚══════════╝  ╚══════════╝  ╚══════════╝  ╚══════════╝  │
-│                           ═══════════════                                │
-│  ╔══════════╗  ╔══════════╗  ╔══════════╗  ╔══════════╗  ╔══════════╗  │
-│  ║  RACK B1 ║  ║  RACK B2 ║  ║  RACK B3 ║  ║  RACK B4 ║  ║  RACK B5 ║  │
-│  ╠══════════╣  ╠══════════╣  ╠══════════╣  ╠══════════╣  ╠══════════╣  │
-│  ║▓▓▓▓▓▓▓▓▓▓║  ║▓▓▓▓▓▓░░░░║  ║░░░░░░░░░░║  ║▓▓▓▓▓▓▓▓▓▓║  ║▓▓▓▓▓▓▓▓▓▓║  │
-│  ╚══════════╝  ╚══════════╝  ╚══════════╝  ╚══════════╝  ╚══════════╝  │
-│                           ═══════════════                                │
-│  ╔══════════╗  ╔══════════╗  ╔══════════╗  ╔══════════╗  ╔══════════╗  │
-│  ║  RACK C1 ║  ║  RACK C2 ║  ║  RACK C3 ║  ║  RACK C4 ║  ║  RACK C5 ║  │
-│  ╠══════════╣  ╠══════════╣  ╠══════════╣  ╠══════════╣  ╠══════════╣  │
-│  ║▓▓▓▓▓▓▓▓▓▓║  ║▓▓▓▓▓▓▓▓▓▓║  ║▓▓▓▓▓▓▓▓▓▓║  ║▓▓▓▓░░░░░░║  ║▓▓▓▓▓▓▓▓▓▓║  │
-│  ╚══════════╝  ╚══════════╝  ╚══════════╝  ╚══════════╝  ╚══════════╝  │
-│                                                                          │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  ⚡ CHARGING ZONE    🤖 AGV-001    🤖 AGV-002    🤖 AGV-003     │    │
-│  │  ████████████████        🔵            🟢            🟡         │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                                                                          │
-│  Legend: ▓▓ = Stock Present  ░░ = Empty  🟢 = Ready  🔵 = Moving  🟡 = Charging │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 🤖 AGV 3D Model Details
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                            AGV MODEL SPECIFICATIONS                      │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│                        ┌─────────────────┐                               │
-│                        │   📡 LIDAR      │                               │
-│                        │   ┌───────┐     │                               │
-│                        │   │  ◉◉◉  │     │  ← Safety sensors             │
-│              ┌─────────┴───┴───────┴─────┴─────────┐                    │
-│              │  ╔═══════════════════════════════╗  │                    │
-│              │  ║     STATUS LED STRIP          ║  │ ← 🟢🔵🟡🔴         │
-│              │  ╠═══════════════════════════════╣  │                    │
-│              │  ║                               ║  │                    │
-│     ┌────────┤  ║    MAIN BODY (1.2m × 0.8m)   ║  ├────────┐           │
-│     │ WHEEL  │  ║         Dark Gray            ║  │ WHEEL  │           │
-│     │  ●●    │  ║                               ║  │   ●●   │           │
-│     └────────┤  ╠═══════════════════════════════╣  ├────────┘           │
-│              │  ║     DISPLAY / SCREEN          ║  │                    │
-│              │  ╚═══════════════════════════════╝  │                    │
-│              └─────────────────────────────────────┘                    │
-│                        │                 │                               │
-│                   ┌────┴────┐       ┌────┴────┐                         │
-│                   │  FORK   │       │  FORK   │  ← Yellow, animated     │
-│                   │ ════════│       │════════ │                         │
-│                   └─────────┘       └─────────┘                         │
-│                                                                          │
-│  Dimensions: 1.2m (L) × 0.8m (W) × 0.3m (H) + forks                     │
-│  Wheels: 4× rubber, animated rotation                                   │
-│  Forks: Lifting animation (0 - 1.5m)                                    │
-│  Lights: Status LEDs, headlights, tail lights                           │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📊 KPIs & Metrics
-
-### 📦 Stock KPIs
-
-<table>
-<tr>
-<th width="25%">KPI</th>
-<th width="35%">Description</th>
-<th width="20%">Formula</th>
-<th width="20%">Target</th>
-</tr>
-<tr>
-<td>📈 <b>Stock Rotation</b></td>
-<td>How often inventory turns over</td>
-<td>COGS / Avg Inventory</td>
-<td>> 12 turns/year</td>
-</tr>
-<tr>
-<td>📊 <b>Fill Rate</b></td>
-<td>Warehouse capacity utilization</td>
-<td>Used Locations / Total</td>
-<td>75-85%</td>
-</tr>
-<tr>
-<td>🎯 <b>Inventory Accuracy</b></td>
-<td>System vs physical match</td>
-<td>Accurate Items / Total</td>
-<td>> 99%</td>
-</tr>
-<tr>
-<td>⚠️ <b>Stockout Rate</b></td>
-<td>Out of stock occurrences</td>
-<td>Stockouts / Total SKUs</td>
-<td>< 2%</td>
-</tr>
-<tr>
-<td>⏱️ <b>Days in Stock</b></td>
-<td>Average storage duration</td>
-<td>Avg Inventory / Daily Use</td>
-<td>< 30 days</td>
-</tr>
-</table>
-
-### 🤖 AGV KPIs
-
-<table>
-<tr>
-<th width="25%">KPI</th>
-<th width="35%">Description</th>
-<th width="20%">Formula</th>
-<th width="20%">Target</th>
-</tr>
-<tr>
-<td>⚡ <b>Utilization Rate</b></td>
-<td>Active time percentage</td>
-<td>Working Time / Available</td>
-<td>> 80%</td>
-</tr>
-<tr>
-<td>✅ <b>Missions Completed</b></td>
-<td>Tasks finished per shift</td>
-<td>Count per 8h</td>
-<td>> 150/shift</td>
-</tr>
-<tr>
-<td>⏱️ <b>Avg Mission Time</b></td>
-<td>Time per task</td>
-<td>Total Time / Missions</td>
-<td>< 3 min</td>
-</tr>
-<tr>
-<td>📍 <b>Distance Traveled</b></td>
-<td>Total km per day</td>
-<td>Sum of paths</td>
-<td>Optimized</td>
-</tr>
-<tr>
-<td>🔋 <b>Battery Efficiency</b></td>
-<td>Work per charge cycle</td>
-<td>Missions / Charge</td>
-<td>> 50 missions</td>
-</tr>
-</table>
-
-### 📋 WMS KPIs
-
-<table>
-<tr>
-<th width="25%">KPI</th>
-<th width="35%">Description</th>
-<th width="20%">Formula</th>
-<th width="20%">Target</th>
-</tr>
-<tr>
-<td>⏱️ <b>Lead Time</b></td>
-<td>Order to shipment time</td>
-<td>Ship Date - Order Date</td>
-<td>< 4 hours</td>
-</tr>
-<tr>
-<td>📦 <b>Throughput</b></td>
-<td>Pallets processed per hour</td>
-<td>Pallets / Hour</td>
-<td>> 50/hour</td>
-</tr>
-<tr>
-<td>✅ <b>Order Fulfillment</b></td>
-<td>Orders shipped complete</td>
-<td>Complete / Total Orders</td>
-<td>> 99%</td>
-</tr>
-<tr>
-<td>🎯 <b>Picking Accuracy</b></td>
-<td>Correct picks percentage</td>
-<td>Correct / Total Picks</td>
-<td>> 99.5%</td>
-</tr>
-</table>
-
-### 📊 Visual KPI Dashboard
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         📊 LIVE KPI DASHBOARD                           │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐          │
-│  │  📦 STOCK       │  │  🤖 AGV FLEET   │  │  📋 OPERATIONS  │          │
-│  │                 │  │                 │  │                 │          │
-│  │  Fill Rate      │  │  Utilization    │  │  Throughput     │          │
-│  │  ████████░░ 78% │  │  ██████████ 95% │  │  ███████░░░ 67% │          │
-│  │                 │  │                 │  │                 │          │
-│  │  Accuracy       │  │  Active: 3/3    │  │  52 pallets/h   │          │
-│  │  ██████████ 99% │  │  🟢🟢🟢         │  │  ↑ 12% vs avg   │          │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘          │
-│                                                                          │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                    📈 HOURLY THROUGHPUT                           │  │
-│  │                                                                    │  │
-│  │  60 ┤                              ╭──╮                           │  │
-│  │  50 ┤         ╭───╮  ╭──╮   ╭──╮  │  │  ╭──╮                     │  │
-│  │  40 ┤   ╭──╮  │   │  │  ╰───╯  ╰──╯  ╰──╯  │                     │  │
-│  │  30 ┤   │  ╰──╯   ╰──╯                     ╰──╮                   │  │
-│  │  20 ┤───╯                                     ╰───                │  │
-│  │     └────┬────┬────┬────┬────┬────┬────┬────┬────┬────           │  │
-│  │         8h   9h  10h  11h  12h  13h  14h  15h  16h  17h           │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                          │
-│  ⚠️ ALERTS                                                              │
-│  ├── 🟡 Low stock: SKU-4521 (Zone A3) - 15 units remaining             │
-│  └── 🟢 All AGVs operational                                            │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🗺️ Project Roadmap
-
-```mermaid
-gantt
-    title Digital Twin WMS - Development Roadmap
-    dateFormat  YYYY-MM-DD
-    section Setup
-    Sprint 0 - Project Setup     :done,    s0, 2026-01-29, 1d
-    section Foundation
-    Sprint 1 - 3D Warehouse      :active,  s1, after s0, 7d
-    section Backend
-    Sprint 2 - AGVs + API        :         s2, after s1, 7d
-    section Logic
-    Sprint 3 - Movement + Path   :         s3, after s2, 7d
-    section Features
-    Sprint 4 - Stock + KPIs      :         s4, after s3, 7d
-    section Polish
-    Sprint 5 - Testing           :         s5, after s4, 7d
-```
-
-### ✅ Sprint Progress
-
-| Sprint | Status | Description | Key Deliverables |
-|--------|--------|-------------|------------------|
-| **Sprint 0** | ✅ Done | Project Setup | README, structure, planning |
-| **Sprint 1** | 🔄 In Progress | 3D Foundation | Warehouse, racks, AGVs, stock visuals |
-| **Sprint 2** | ⏳ Planned | Backend + API | FastAPI, WebSocket, database |
-| **Sprint 3** | ⏳ Planned | Movement | A* pathfinding, animations, sync |
-| **Sprint 4** | ⏳ Planned | Stock + KPIs | Inventory logic, dashboards |
-| **Sprint 5** | ⏳ Planned | Polish | Testing, optimization, docs |
+### Development Tools
+- **http-server**: Local development server
+- **Git**: Version control
 
 ---
 
@@ -557,614 +153,677 @@ gantt
 ```
 Projet_Digital_twin_WMS/
 │
-├── 📄 README.md                    # This file
-├── 📄 LICENSE                      # MIT License
-├── 📄 .gitignore                   # Git ignore rules
+├── frontend/                      # Frontend application
+│   ├── index.html                 # 3D warehouse visualization (main page)
+│   ├── home.html                  # Landing page
+│   ├── warehouse-2d.html          # 2D warehouse overview
+│   ├── kpi-dashboard.html         # KPI metrics dashboard
+│   ├── stock-analysis.html        # Stock analytics and reports
+│   ├── management.html            # AGV and task management
+│   ├── diagnostic.html            # System diagnostics
+│   ├── clear-cache.html           # Cache management utility
+│   │
+│   ├── css/                       # Stylesheets
+│   │   ├── styles.css             # Global styles
+│   │   ├── navigation.css         # Navigation bar styles
+│   │   ├── warehouse-2d.css       # 2D view styles
+│   │   ├── kpi-dashboard.css      # Dashboard styles
+│   │   └── ...
+│   │
+│   ├── js/                        # JavaScript modules
+│   │   ├── supabase-config.js     # Supabase client configuration
+│   │   ├── main.js                # 3D scene initialization
+│   │   ├── warehouse.js           # Warehouse model builder
+│   │   ├── agv.js                 # AGV visualization & logic
+│   │   ├── racks.js               # Rack system management
+│   │   ├── stock.js               # Stock tracking logic
+│   │   ├── realtime-sync.js       # Supabase realtime integration
+│   │   ├── websocket-supabase.js  # WebSocket manager
+│   │   ├── kpi-dashboard.js       # KPI calculations
+│   │   ├── stock-analysis.js      # Analytics logic
+│   │   ├── warehouse-2d.js        # 2D visualization
+│   │   ├── navigation.js          # Page navigation
+│   │   ├── taskManager.js         # Task management
+│   │   └── ...
+│   │
+│   └── lib/                       # Third-party libraries
+│       └── three.min.js           # Three.js r137
 │
-├── 📂 frontend/                    # 🖥️ Web-based 3D visualization
-│   ├── 📄 index.html               # Main entry point
-│   ├── 📂 css/
-│   │   └── 📄 style.css            # UI styling (dark theme)
-│   ├── 📂 js/
-│   │   ├── 📄 main.js              # Three.js initialization
-│   │   ├── 📄 warehouse.js         # Warehouse 3D model
-│   │   ├── 📄 racks.js             # Racking system
-│   │   ├── 📄 agv.js               # AGV models & logic
-│   │   ├── 📄 stock.js             # Stock visualization
-│   │   ├── 📄 controls.js          # Camera & UI controls
-│   │   └── 📄 websocket.js         # Real-time connection
-│   └── 📂 assets/
-│       ├── 📂 textures/            # Floor, metal, wood textures
-│       ├── 📂 models/              # 3D model files (GLTF)
-│       └── 📂 icons/               # UI icons
+├── database/                      # Database schema & migrations
+│   ├── supabase-schema.sql        # Complete database schema
+│   ├── setup_rls_policies.sql     # Row Level Security policies
+│   ├── REBUILD_FOR_3D.sql         # 3D-specific tables
+│   └── DATABASE_RELATIONS.md      # Schema documentation
 │
-├── 📂 backend/                     # ⚙️ Python FastAPI server
-│   ├── 📄 main.py                  # Application entry point
-│   ├── 📄 requirements.txt         # Python dependencies
-│   ├── 📂 models/
-│   │   ├── 📄 agv.py               # AGV data model
-│   │   ├── 📄 location.py          # Warehouse locations
-│   │   ├── 📄 product.py           # Product/SKU model
-│   │   ├── 📄 mission.py           # AGV missions
-│   │   └── 📄 order.py             # Order model
-│   ├── 📂 services/
-│   │   ├── 📄 pathfinding.py       # A* algorithm
-│   │   ├── 📄 mission_manager.py   # Mission assignment
-│   │   ├── 📄 stock_manager.py     # Inventory logic
-│   │   └── 📄 simulation.py        # SimPy engine
-│   ├── 📂 api/
-│   │   ├── 📄 routes.py            # REST endpoints
-│   │   └── 📄 websocket.py         # WebSocket handlers
-│   └── 📂 tests/
-│       └── 📄 test_*.py            # Unit tests
+├── docs/                          # Documentation
+│   ├── SUPABASE_SETUP_COMPLETE.md # Supabase setup guide
+│   ├── REALTIME_SYNC_SETUP.md     # Realtime configuration
+│   └── DATABASE_ANALYSIS.md       # Database analysis
 │
-├── 📂 database/                    # 💾 Database schemas
-│   ├── 📄 schema.sql               # PostgreSQL schema
-│   ├── 📄 seed_data.sql            # Initial data
-│   └── 📄 migrations/              # Database migrations
-│
-├── 📂 factory-io/                  # 🏭 Factory I/O scenes
-│   └── 📂 scenes/
-│       └── 📄 warehouse.factoryio  # Main warehouse scene
-│
-├── 📂 docs/                        # 📚 Documentation
-│   ├── 📄 architecture.md          # System architecture
-│   ├── 📄 api-reference.md         # API documentation
-│   ├── 📄 user-guide.md            # User manual
-│   └── 📂 images/                  # Documentation images
-│
-└── 📂 tests/                       # 🧪 Integration tests
-    ├── 📄 test_integration.py
-    └── 📄 test_e2e.py
+└── README.md                      # This file
 ```
-
----
-
-## 🛠️ Tech Stack
-
-<table>
-<tr>
-<th>Layer</th>
-<th>Technology</th>
-<th>Purpose</th>
-</tr>
-<tr>
-<td rowspan="3"><b>🖥️ Frontend</b></td>
-<td><img src="https://img.shields.io/badge/Three.js-000000?style=flat&logo=three.js&logoColor=white"/></td>
-<td>3D rendering engine</td>
-</tr>
-<tr>
-<td><img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black"/></td>
-<td>Application logic</td>
-</tr>
-<tr>
-<td><img src="https://img.shields.io/badge/HTML5/CSS3-E34F26?style=flat&logo=html5&logoColor=white"/></td>
-<td>UI structure & styling</td>
-</tr>
-<tr>
-<td rowspan="2"><b>⚙️ Backend</b></td>
-<td><img src="https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white"/></td>
-<td>Server-side logic</td>
-</tr>
-<tr>
-<td><img src="https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white"/></td>
-<td>REST API framework</td>
-</tr>
-<tr>
-<td rowspan="2"><b>💾 Database</b></td>
-<td><img src="https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white"/></td>
-<td>Main data storage</td>
-</tr>
-<tr>
-<td><img src="https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white"/></td>
-<td>Cache & message queue</td>
-</tr>
-<tr>
-<td rowspan="2"><b>🔌 Integration</b></td>
-<td><img src="https://img.shields.io/badge/WebSocket-010101?style=flat&logo=socket.io&logoColor=white"/></td>
-<td>Real-time communication</td>
-</tr>
-<tr>
-<td><img src="https://img.shields.io/badge/Factory_I/O-FF6B00?style=flat"/></td>
-<td>PLC simulation</td>
-</tr>
-<tr>
-<td><b>🧪 Testing</b></td>
-<td><img src="https://img.shields.io/badge/Pytest-0A9EDC?style=flat&logo=pytest&logoColor=white"/></td>
-<td>Unit & integration tests</td>
-</tr>
-</table>
 
 ---
 
 ## 🚀 Getting Started
 
-### 📋 Prerequisites
+### Prerequisites
 
-Before you begin, ensure you have the following installed:
+- Modern web browser (Chrome, Firefox, Edge)
+- Supabase account (free tier available)
+- Node.js (for http-server) or any static file server
 
-| Requirement | Version | Download |
-|-------------|---------|----------|
-| **Node.js** | 18+ | [nodejs.org](https://nodejs.org/) |
-| **Python** | 3.10+ | [python.org](https://python.org/) |
-| **PostgreSQL** | 14+ | [postgresql.org](https://postgresql.org/) |
-| **Git** | Latest | [git-scm.com](https://git-scm.com/) |
+### Step 1: Create Supabase Project
 
-### 🐳 Docker (recommandé)
+1. Go to [supabase.com](https://supabase.com) and create a free account
+2. Create a new project
+3. Note your project URL and anon/public API key
 
-La base PostgreSQL est gérée via Docker Compose.
+### Step 2: Import Database Schema
 
-Fichier Docker :
-- [docker-compose.yml](docker-compose.yml)
+1. In Supabase Dashboard, go to **SQL Editor**
+2. Copy the contents of `database/supabase-schema.sql`
+3. Paste and execute the SQL
+4. Verify tables are created: `stocks`, `agvs`, `racks`, `sensors`, `tasks`
 
-Étapes :
-1. Ouvre un terminal à la racine du projet.
-2. Lance Docker Compose avec la commande docker compose up.
-3. La base PostgreSQL est disponible sur localhost:5432.
+### Step 3: Enable Realtime
 
-Variables d’environnement (optionnelles) pour PostgreSQL :
-- POSTGRES_DB (par défaut : digital_twin)
-- POSTGRES_USER (par défaut : digital_twin)
-- POSTGRES_PASSWORD (par défaut : digital_twin)
+1. In Supabase Dashboard, go to **Database** → **Replication**
+2. Enable realtime for these tables:
+   - ✅ `stocks`
+   - ✅ `agvs`
+   - ✅ `tasks`
+   - ✅ `sensors`
+   - ✅ `racks`
 
-### ☁️ Architecture Antérieure - OBSOLÈTE (Migration vers Docker 100% Complète)
+### Step 4: Configure Frontend
 
-J’ai ajouté un schéma et des données de base prêtes à coller dans Supabase :
-- [database/schema.sql](database/schema.sql)
-- [database/seed_data.sql](database/seed_data.sql)
-
-Étapes :
-1. Crée un projet Supabase.
-2. Ouvre SQL Editor.
-3. Colle d’abord le contenu de [database/schema.sql](database/schema.sql).
-4. Puis colle [database/seed_data.sql](database/seed_data.sql).
-
-Tu auras les tables principales (warehouse, racks, locations, stock, agvs, missions) et des vues KPI.
-
-#### 🔴 Realtime (frontend)
-1. Ouvre [frontend/js/supabase-config.js](frontend/js/supabase-config.js) et remplace l’URL + clé anon.
-2. Dans Supabase > Database > Replication, active le realtime pour : agvs, stock_items, missions.
-3. Ouvre [frontend/index.html](frontend/index.html) et lance le frontend.
-
-### 🔧 Installation
-
-#### 1️⃣ Clone the Repository
-
-```bash
-git clone https://github.com/Mehdi007bond/Projet_Digital_twin_WMS.git
-cd Projet_Digital_twin_WMS
-```
-
-#### 2️⃣ Frontend Setup
-
-```bash
-# Navigate to frontend
-cd frontend
-
-# Option A: Use Python's simple server
-python -m http.server 8000
-
-# Option B: Use Node.js live-server (recommended)
-npx live-server
-
-# Option C: Use VS Code Live Server extension
-# Right-click index.html → "Open with Live Server"
-```
-
-#### 3️⃣ Backend Setup
-
-```bash
-# Navigate to backend
-cd backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the server
-uvicorn main:app --reload --host 0.0.0.0 --port 8001
-```
-
-#### 4️⃣ Database Setup
-
-```bash
-# Create database
-psql -U postgres -c "CREATE DATABASE digital_twin_wms;"
-
-# Run schema
-psql -U postgres -d digital_twin_wms -f database/schema.sql
-
-# Load seed data (optional)
-psql -U postgres -d digital_twin_wms -f database/seed_data.sql
-```
-
-### 🎮 Running the Application
-
-```bash
-# Terminal 1: Frontend
-cd frontend && python -m http.server 8000
-
-# Terminal 2: Backend
-cd backend && uvicorn main:app --reload --port 8001
-
-# Open browser
-# Frontend: http://localhost:8000
-# API Docs: http://localhost:8001/docs
-```
-
-### ✅ Verify Installation
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    ✅ INSTALLATION CHECK                    │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [✓] Frontend loads at http://localhost:8000                │
-│  [✓] 3D warehouse is visible                                │
-│  [✓] Camera controls work (rotate, zoom, pan)               │
-│  [✓] Backend API at http://localhost:8001/docs              │
-│  [✓] WebSocket connection established                       │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📈 Stock Management
-
-### 📦 Storage Strategies
-
-<table>
-<tr>
-<td width="33%" align="center">
-
-**FIFO**
-*First In, First Out*
-
-```
-Ideal for:
-• Perishables
-• Dated products
-• Pharmaceuticals
-```
-
-</td>
-<td width="33%" align="center">
-
-**LIFO**
-*Last In, First Out*
-
-```
-Ideal for:
-• Non-perishables
-• Building materials
-• Bulk items
-```
-
-</td>
-<td width="33%" align="center">
-
-**ABC**
-*Activity-Based*
-
-```
-Ideal for:
-• Mixed inventory
-• Optimization focus
-• High SKU count
-```
-
-</td>
-</tr>
-</table>
-
-### 🎨 Stock Visualization
-
-```
-FILL LEVEL COLOR CODING:
-═══════════════════════════════════════════════════════════
-
-  ████████████  100%   🟢 Full - Green glow
-  ██████████░░   75%   🟡 Good - Light green
-  ████████░░░░   50%   🟠 Medium - Yellow
-  ████░░░░░░░░   25%   🔴 Low - Orange
-  ░░░░░░░░░░░░    0%   ⚫ Empty - Gray
-
-ABC CATEGORY INDICATORS:
-═══════════════════════════════════════════════════════════
-
-  🔵 Category A - High rotation (20% SKUs = 80% movement)
-  🟢 Category B - Medium rotation (30% SKUs = 15% movement)  
-  🟡 Category C - Low rotation (50% SKUs = 5% movement)
-
-ALERT SYSTEM:
-═══════════════════════════════════════════════════════════
-
-  ⚠️  LOW STOCK WARNING    → Yellow pulsing outline
-  🚨  CRITICAL STOCK       → Red flashing + notification
-  ✅  OPTIMAL LEVEL        → Green steady glow
-  📦  OVERSTOCK            → Blue indicator
-```
-
----
-
-## 🤖 AGV System
-
-### 🚗 Fleet Management
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         🤖 AGV FLEET STATUS                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  AGV-001          AGV-002          AGV-003          FLEET SUMMARY       │
-│  ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌────────────┐      │
-│  │  🟢     │      │  🔵     │      │  🟡     │      │ Active: 2  │      │
-│  │  READY  │      │ MOVING  │      │CHARGING │      │ Idle: 1    │      │
-│  └─────────┘      └─────────┘      └─────────┘      │ Charging: 1│      │
-│                                                      └────────────┘      │
-│  Battery: 85%     Battery: 62%     Battery: 45%                         │
-│  Missions: 23     Missions: 18     Missions: 15                         │
-│  Location: A2     Location: B4     Location: CHG-1                      │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 🧭 Pathfinding (A* Algorithm)
-
-```python
-# Simplified A* implementation
-def find_path(start, goal, warehouse_grid):
-    """Find optimal path avoiding obstacles    
-    Args:
-        start: Starting position (x, y)
-        goal: Target position (x, y)
-        warehouse_grid: 2D grid with obstacles    
-    Returns:
-        List of waypoints [(x1,y1), (x2,y2), ...]
-    """
-    # A* implementation with:
-    # - Manhattan distance heuristic
-    # - Diagonal movement disabled (warehouse aisles)
-    # - Dynamic obstacle avoidance
-    # - Other AGV collision prevention
-```
-
-### 🔄 Mission Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> PENDING: Mission Created
-    PENDING --> ASSIGNED: AGV Selected
-    ASSIGNED --> EN_ROUTE_PICKUP: AGV Dispatched
-    EN_ROUTE_PICKUP --> AT_PICKUP: Arrived
-    AT_PICKUP --> LOADING: Fork Lowered
-    LOADING --> LOADED: Pallet Secured
-    LOADED --> EN_ROUTE_DROPOFF: Navigate to Dest
-    EN_ROUTE_DROPOFF --> AT_DROPOFF: Arrived
-    AT_DROPOFF --> UNLOADING: Fork Lowered
-    UNLOADING --> COMPLETED: Pallet Placed
-    COMPLETED --> [*]
-    
-    ASSIGNED --> CANCELLED: Abort
-    EN_ROUTE_PICKUP --> CANCELLED: Abort
-    CANCELLED --> [*]
-```
-
-### ⚡ AGV Status Indicators
-
-| Status | LED Color | Description |
-|--------|-----------|-------------|
-| 🟢 **Ready** | Green steady | Available for missions |
-| 🔵 **Moving** | Blue pulsing | Executing mission |
-| 🟡 **Charging** | Yellow slow pulse | At charging station |
-| 🟠 **Waiting** | Orange blink | Waiting for path |
-| 🔴 **Error** | Red flash | Fault condition |
-| ⚪ **Offline** | White dim | Not connected |
-
----
-
-## 🔗 API Documentation
-
-### 📡 REST Endpoints
-
-```
-BASE URL: http://localhost:8001/api/v1
-
-┌──────────┬─────────────────────────┬───────────────────────────────┐
-│  Method  │  Endpoint               │  Description                  │
-├──────────┼─────────────────────────┼───────────────────────────────┤
-│  GET     │  /agvs                  │  List all AGVs                │
-│  GET     │  /agvs/{id}             │  Get AGV details              │
-│  POST    │  /agvs/{id}/mission     │  Assign mission to AGV        │
-│  GET     │  /stock                 │  Get all stock levels         │
-│  GET     │  /stock/{location}      │  Get location stock           │
-│  POST    │  /orders                │  Create new order             │
-│  GET     │  /kpis                  │  Get current KPIs             │
-│  GET     │  /kpis/history          │  Get KPI history              │
-└──────────┴─────────────────────────┴───────────────────────────────┘
-```
-
-### 🔌 WebSocket Events
+1. Open `frontend/js/supabase-config.js`
+2. Replace with your Supabase credentials:
 
 ```javascript
-// Connection
-ws://localhost:8001/ws
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key';
 
-// Events (Server → Client)
-{
-  "type": "agv_position",
-  "data": { "id": "AGV-001", "x": 12.5, "y": 8.3, "rotation": 90 }
-}
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+```
 
-{
-  "type": "stock_update", 
-  "data": { "location": "A1-L2-P1", "quantity": 45, "status": "normal" }
-}
+### Step 5: Run the Application
 
-{
-  "type": "mission_update",
-  "data": { "id": "M-123", "agv": "AGV-001", "status": "completed" }
-}
+```bash
+# Install http-server globally (one-time)
+npm install -g http-server
 
-{
-  "type": "kpi_update",
-  "data": { "throughput": 52, "utilization": 0.85, "fillRate": 0.78 }
-}
+# Navigate to frontend directory
+cd frontend
+
+# Start development server
+http-server -p 8080
+
+# Open browser to http://localhost:8080
+```
+
+**Alternative**: Use any static file server (Python, PHP built-in servers, VS Code Live Server, etc.)
+
+---
+
+## 📄 Pages & Features
+
+### 🏠 Home (`home.html`)
+Landing page with project overview and navigation to main features.
+
+### 🎨 3D Warehouse (`index.html`)
+**Main visualization interface**
+- Interactive 3D warehouse model
+- Real-time AGV position tracking
+- Dynamic rack and stock visualization
+- Camera controls (orbit, pan, zoom)
+- Color-coded stock status
+- Live data synchronization
+
+### 🗺️ 2D Warehouse (`warehouse-2d.html`)
+**Top-down overview**
+- 2D floor plan with all racks
+- AGV positions and paths
+- Quick navigation and planning
+- Simplified view for layout analysis
+
+### 📊 KPI Dashboard (`kpi-dashboard.html`)
+**Real-time metrics and analytics**
+- Stock KPIs (fill rate, turnover, alerts)
+- AGV KPIs (utilization, efficiency, battery status)
+- Operational metrics (tasks completed, response time)
+- Historical charts and trends
+- Customizable time ranges
+
+### 📈 Stock Analysis (`stock-analysis.html`)
+**Advanced inventory analytics**
+- Stock level trends over time
+- Category-wise distribution
+- Location utilization heatmaps
+- Demand forecasting
+- Export capabilities
+
+### 🎮 Management (`management.html`)
+**Control center**
+- AGV task assignment
+- Manual stock adjustments
+- System configuration
+- Alert management
+- User permissions
+
+### 🔧 Diagnostic (`diagnostic.html`)
+**System health monitoring**
+- Database connection status
+- Realtime sync status
+- API response times
+- Error logs and debugging
+- Performance metrics
+
+### 🗑️ Clear Cache (`clear-cache.html`)
+**Maintenance utility**
+- Clear local storage
+- Reset cached data
+- Force refresh database connections
+- Troubleshooting tool
+
+---
+
+## 📦 Stock Management
+
+### Location Hierarchy
+
+```
+Warehouse
+  └─ Rack (e.g., R01)
+      └─ Shelf (e.g., E1, E2, E3, E4)
+          └─ Position (e.g., P1, P2, P3)
+              └─ Stock Item
+```
+
+**Full Location Format**: `R01-E2-P3` (Rack 01, Shelf 2, Position 3)
+
+### Stock Status Color Coding
+
+| Status | Color | Condition | Action Required |
+|--------|-------|-----------|----------------|
+| ✅ Optimal | Green | 50-100% capacity | None |
+| ⚠️ Low | Orange | 20-49% capacity | Restock soon |
+| 🚨 Critical | Red | 0-19% capacity | Immediate restock |
+| ⚫ Overstock | Dark | >100% capacity | Redistribute |
+
+### Database Schema
+
+```sql
+CREATE TABLE stocks (
+    id SERIAL PRIMARY KEY,
+    item_name VARCHAR(100) NOT NULL,
+    quantity INTEGER DEFAULT 0,
+    location VARCHAR(50),           -- Format: R01-E2-P3
+    rack_id INTEGER REFERENCES racks(id),
+    min_quantity INTEGER DEFAULT 10,
+    max_quantity INTEGER DEFAULT 100,
+    category VARCHAR(50),
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'optimal'  -- optimal, low, critical, overstock
+);
+
+CREATE INDEX idx_stocks_location ON stocks(location);
+CREATE INDEX idx_stocks_rack ON stocks(rack_id);
+CREATE INDEX idx_stocks_status ON stocks(status);
 ```
 
 ---
 
-## 🧪 Testing
+## 🤖 AGV Fleet System
 
-### 🔬 Running Tests
+### AGV Architecture
 
-```bash
-# Backend unit tests
-cd backend
-pytest tests/ -v
+The AGV (Automated Guided Vehicle) system is designed for flexible, multi-agent warehouse operations.
 
-# With coverage
-pytest tests/ --cov=. --cov-report=html
-
-# Frontend tests (if applicable)
-cd frontend
-npm test
+```
+AGV Fleet
+  ├─ AGV-001 (Active)
+  ├─ AGV-002 (Charging)
+  └─ AGV-003 (Idle)
+      │
+      ├─ Position: { x, y, z }
+      ├─ Status: idle | moving | picking | charging | error
+      ├─ Battery: 0-100%
+      ├─ Current Task: task_id
+      └─ Path: [ waypoints ]
 ```
 
-### ✅ Test Coverage Goals
+### AGV Data Structure
 
-| Module | Target | Current |
-|--------|--------|---------|
-| Pathfinding | 90% | - |
-| Mission Manager | 85% | - |
-| Stock Manager | 85% | - |
-| API Endpoints | 80% | - |
-| WebSocket | 75% | - |
+```sql
+CREATE TABLE agvs (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    position_x FLOAT DEFAULT 0,
+    position_y FLOAT DEFAULT 0,
+    position_z FLOAT DEFAULT 0,
+    rotation FLOAT DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'idle',  -- idle, moving, picking, dropping, charging, error
+    battery_level INTEGER DEFAULT 100,
+    current_task_id INTEGER REFERENCES tasks(id),
+    speed FLOAT DEFAULT 2.0,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    color VARCHAR(7) DEFAULT '#3498db'
+);
+
+CREATE TABLE tasks (
+    id SERIAL PRIMARY KEY,
+    type VARCHAR(20) NOT NULL,  -- transport, pick, place, charge
+    assigned_agv_id INTEGER REFERENCES agvs(id),
+    source_location VARCHAR(50),
+    target_location VARCHAR(50),
+    stock_item_id INTEGER REFERENCES stocks(id),
+    priority INTEGER DEFAULT 5,
+    status VARCHAR(20) DEFAULT 'pending',  -- pending, in_progress, completed, failed
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
+);
+```
+
+### Battery Management
+
+| Battery Level | Status | Action |
+|--------------|--------|--------|
+| 80-100% | ✅ Optimal | Available for all tasks |
+| 50-79% | ⚡ Good | Continue operations |
+| 20-49% | ⚠️ Low | Return to charging after current task |
+| 0-19% | 🚨 Critical | Immediate charging required |
+
+### AGV Visualization
+
+- **3D Model**: Custom Three.js geometries
+- **Real-time Position**: Updated via Supabase Realtime
+- **Path Rendering**: Line geometries showing planned routes
+- **Status Indicators**: Color-coded badges
+- **Battery Display**: Dynamic gauge visualization
+
+---
+
+## 🗄️ Database Schema
+
+### Entity Relationship Diagram
+
+```
+┌──────────────┐         ┌──────────────┐         ┌──────────────┐
+│    RACKS     │         │    STOCKS    │         │     AGVS     │
+│──────────────│         │──────────────│         │──────────────│
+│ id (PK)      │◄───┐    │ id (PK)      │         │ id (PK)      │
+│ name         │    └────│ rack_id (FK) │         │ name         │
+│ position_x   │         │ item_name    │         │ position_x/y │
+│ position_y   │         │ quantity     │         │ status       │
+│ position_z   │         │ location     │         │ battery      │
+│ width        │         │ min_quantity │    ┌────│ task_id (FK) │
+│ height       │         │ max_quantity │    │    └──────────────┘
+│ depth        │         │ category     │    │
+│ color        │         │ status       │    │    ┌──────────────┐
+│ num_shelves  │         └──────────────┘    │    │    TASKS     │
+└──────────────┘                             │    │──────────────│
+                                             └───►│ id (PK)      │
+┌──────────────┐         ┌──────────────┐         │ agv_id (FK)  │
+│   SENSORS    │         │ AGV_TELEMETRY│         │ type         │
+│──────────────│         │──────────────│         │ priority     │
+│ id (PK)      │         │ id (PK)      │         │ status       │
+│ name         │         │ agv_id (FK)  │         │ source_loc   │
+│ type         │         │ timestamp    │         │ target_loc   │
+│ location     │         │ metric_name  │         │ stock_id(FK) │
+│ value        │         │ value        │         └──────────────┘
+│ status       │         └──────────────┘
+└──────────────┘
+```
+
+### Core Tables
+
+#### 1. Stocks Table
+Manages all inventory items across warehouse locations.
+
+```sql
+CREATE TABLE stocks (
+    id SERIAL PRIMARY KEY,
+    item_name VARCHAR(100) NOT NULL,
+    quantity INTEGER DEFAULT 0,
+    location VARCHAR(50),
+    rack_id INTEGER REFERENCES racks(id) ON DELETE SET NULL,
+    min_quantity INTEGER DEFAULT 10,
+    max_quantity INTEGER DEFAULT 100,
+    category VARCHAR(50),
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'optimal',
+    CONSTRAINT valid_quantity CHECK (quantity >= 0),
+    CONSTRAINT valid_status CHECK (status IN ('optimal', 'low', 'critical', 'overstock'))
+);
+```
+
+#### 2. AGVs Table
+Tracks autonomous guided vehicles and their states.
+
+```sql
+CREATE TABLE agvs (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    position_x FLOAT DEFAULT 0,
+    position_y FLOAT DEFAULT 0,
+    position_z FLOAT DEFAULT 0,
+    rotation FLOAT DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'idle',
+    battery_level INTEGER DEFAULT 100,
+    current_task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+    speed FLOAT DEFAULT 2.0,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    color VARCHAR(7) DEFAULT '#3498db',
+    CONSTRAINT valid_battery CHECK (battery_level >= 0 AND battery_level <= 100),
+    CONSTRAINT valid_status CHECK (status IN ('idle', 'moving', 'picking', 'dropping', 'charging', 'error'))
+);
+```
+
+#### 3. Racks Table
+Defines physical storage rack structures.
+
+```sql
+CREATE TABLE racks (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    position_x FLOAT NOT NULL,
+    position_y FLOAT NOT NULL,
+    position_z FLOAT DEFAULT 0,
+    width FLOAT DEFAULT 2.0,
+    height FLOAT DEFAULT 4.0,
+    depth FLOAT DEFAULT 1.0,
+    color VARCHAR(7) DEFAULT '#8B4513',
+    num_shelves INTEGER DEFAULT 4,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### 4. Tasks Table
+Manages AGV task assignments and workflow.
+
+```sql
+CREATE TABLE tasks (
+    id SERIAL PRIMARY KEY,
+    type VARCHAR(20) NOT NULL,
+    assigned_agv_id INTEGER REFERENCES agvs(id) ON DELETE SET NULL,
+    source_location VARCHAR(50),
+    target_location VARCHAR(50),
+    stock_item_id INTEGER REFERENCES stocks(id) ON DELETE CASCADE,
+    priority INTEGER DEFAULT 5,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    CONSTRAINT valid_type CHECK (type IN ('transport', 'pick', 'place', 'charge')),
+    CONSTRAINT valid_status CHECK (status IN ('pending', 'in_progress', 'completed', 'failed', 'cancelled'))
+);
+```
+
+### Database Views
+
+```sql
+-- Stock Status Summary
+CREATE VIEW stock_status_summary AS
+SELECT 
+    status,
+    COUNT(*) as count,
+    SUM(quantity) as total_quantity
+FROM stocks
+GROUP BY status;
+
+-- AGV Fleet Status
+CREATE VIEW agv_fleet_status AS
+SELECT 
+    status,
+    COUNT(*) as count,
+    AVG(battery_level) as avg_battery
+FROM agvs
+GROUP BY status;
+
+-- Task Performance Metrics
+CREATE VIEW task_performance AS
+SELECT 
+    type,
+    status,
+    COUNT(*) as task_count,
+    AVG(EXTRACT(EPOCH FROM (completed_at - started_at))) as avg_duration_seconds
+FROM tasks
+WHERE started_at IS NOT NULL
+GROUP BY type, status;
+```
+
+### Row Level Security (RLS)
+
+RLS policies ensure secure data access:
+
+```sql
+-- Enable RLS on all tables
+ALTER TABLE stocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agvs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE racks ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access
+CREATE POLICY "Allow public read access" ON stocks FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON agvs FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON tasks FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON racks FOR SELECT USING (true);
+
+-- Allow authenticated updates
+CREATE POLICY "Allow authenticated updates" ON stocks FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated updates" ON agvs FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated updates" ON tasks FOR ALL USING (auth.role() = 'authenticated');
+```
+
+### Schema Files
+
+- **`supabase-schema.sql`**: Complete database schema with all tables, views, indexes
+- **`setup_rls_policies.sql`**: Row Level Security policy definitions
+- **`REBUILD_FOR_3D.sql`**: 3D visualization-specific schema updates
+- **`DATABASE_RELATIONS.md`**: Detailed schema documentation
+
+---
+
+## 📊 KPIs & Metrics
+
+### Stock KPIs
+
+| Metric | Description | Calculation | Target |
+|--------|-------------|-------------|--------|
+| **Fill Rate** | Percentage of storage capacity used | `(Total Qty / Total Max) × 100` | 70-85% |
+| **Turnover Rate** | Stock movement frequency | `Outbound / Avg Inventory` | >5/month |
+| **Critical Items** | Items below minimum threshold | `COUNT(qty < min_qty)` | <5% |
+| **Overstock Items** | Items above maximum threshold | `COUNT(qty > max_qty)` | <2% |
+| **Stock Accuracy** | Inventory record accuracy | `Correct / Total × 100` | >98% |
+
+### AGV KPIs
+
+| Metric | Description | Calculation | Target |
+|--------|-------------|-------------|--------|
+| **Fleet Utilization** | AGVs actively working | `(Active AGVs / Total) × 100` | >75% |
+| **Average Battery** | Mean battery level across fleet | `AVG(battery_level)` | >60% |
+| **Tasks per Hour** | Throughput rate | `Completed Tasks / Hours` | >20 |
+| **Task Success Rate** | Completed vs failed tasks | `(Completed / Total) × 100` | >95% |
+| **Avg Response Time** | Task start to completion | `AVG(completed - created)` | <5 min |
+
+### Operational Metrics
+
+| Metric | Description | Source |
+|--------|-------------|--------|
+| **Total Stock Items** | Count of all inventory items | `stocks` table |
+| **Total Quantity** | Sum of all quantities | `SUM(stocks.quantity)` |
+| **Active AGVs** | AGVs currently working | `agvs` WHERE status != 'idle' |
+| **Pending Tasks** | Tasks awaiting assignment | `tasks` WHERE status = 'pending' |
+| **Warehouse Capacity** | Total storage positions | `racks.num_shelves × positions` |
+
+### Real-time Monitoring
+
+The KPI Dashboard refreshes metrics every 5 seconds using Supabase Realtime subscriptions:
+
+```javascript
+// Subscribe to stock changes
+supabase
+  .channel('stock-changes')
+  .on('postgres_changes', 
+    { event: '*', schema: 'public', table: 'stocks' },
+    payload => updateStockKPIs()
+  )
+  .subscribe();
+
+// Subscribe to AGV changes
+supabase
+  .channel('agv-changes')
+  .on('postgres_changes',
+    { event: '*', schema: 'public', table: 'agvs' },
+    payload => updateAgvKPIs()
+  )
+  .subscribe();
+```
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how to get started:
+We welcome contributions from the community! Here's how you can help:
 
-### 📝 How to Contribute
+### Reporting Bugs
 
-1. **🍴 Fork** the repository
-2. **🌿 Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **💻 Code** your changes
-4. **✅ Test** your changes
-5. **📝 Commit** with clear messages (`git commit -m 'Add amazing feature'`)
-6. **🚀 Push** to your branch (`git push origin feature/amazing-feature`)
-7. **🔃 Open** a Pull Request
+1. Check existing issues to avoid duplicates
+2. Use the bug report template
+3. Include:
+   - Browser and version
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Console errors (if any)
+   - Screenshots (if relevant)
 
-### 📏 Code Style
+### Submitting Pull Requests
 
-```
-✅ DO:
-  • Use meaningful variable names
-  • Add JSDoc/docstring comments
-  • Follow existing code patterns
-  • Write tests for new features
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Test thoroughly
+5. Commit with clear messages: `git commit -m "feat: add amazing feature"`
+6. Push to your fork: `git push origin feature/amazing-feature`
+7. Open a Pull Request
 
-❌ DON'T:
-  • Commit directly to main
-  • Leave console.log statements
-  • Skip error handling
-  • Ignore linting warnings
-```
+### Commit Convention
 
-### 🐛 Reporting Bugs
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-Use the GitHub Issues template:
-- **Title**: Clear, concise description
-- **Steps**: How to reproduce
-- **Expected**: What should happen
-- **Actual**: What actually happens
-- **Screenshots**: If applicable
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `style:` Code style changes (formatting, etc.)
+- `refactor:` Code refactoring
+- `perf:` Performance improvements
+- `test:` Adding or updating tests
+- `chore:` Maintenance tasks
+
+### Code Style
+
+- Use ES6+ JavaScript features
+- Follow existing code formatting
+- Add comments for complex logic
+- Keep functions small and focused
+- Use meaningful variable names
 
 ---
 
-## 📜 License
+## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** - see below for details:
 
 ```
 MIT License
 
-Copyright (c) 2026 Mehdi007bond
+Copyright (c) 2024 INSA Digital Twin WMS Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software...
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ---
 
 ## 👥 Team
 
-<table>
-<tr>
-<td align="center">
-<a href="https://github.com/Mehdi007bond">
-<img src="https://github.com/Mehdi007bond.png" width="100px;" alt="Mehdi007bond"/>
-<br />
-<sub><b>Mehdi007bond</b></sub>
-</a>
-<br />
-<sub>🎯 Project Lead</sub>
-</td>
-</tr>
-</table>
+This project is developed by **INSA Engineering Students** as part of an industrial informatics and automation curriculum.
+
+**Project Type**: Academic Engineering Project  
+**Institution**: INSA (Institut National des Sciences Appliquées)  
+**Focus**: Digital Twin Technology, Warehouse Automation, Real-time Systems
 
 ---
 
-## 🙏 Acknowledgments
+## 🎓 Learning Resources
 
-<table>
-<tr>
-<td>
+### Technologies Used
+- [Three.js Documentation](https://threejs.org/docs/)
+- [Supabase Documentation](https://supabase.com/docs)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
 
-### 🛠️ Technologies
-- [Three.js](https://threejs.org/) - 3D graphics library
-- [FastAPI](https://fastapi.tiangolo.com/) - Python web framework
-- [Factory I/O](https://factoryio.com/) - Industrial simulation
-
-</td>
-<td>
-
-### 📚 Resources
-- [Three.js Fundamentals](https://threejs.org/manual/)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Warehouse Best Practices](https://www.werc.org/)
-
-</td>
-</tr>
-</table>
+### Related Topics
+- Digital Twin Technology
+- Warehouse Management Systems (WMS)
+- Autonomous Guided Vehicles (AGV)
+- Real-time Data Synchronization
+- 3D Web Visualization
 
 ---
 
-<div align="center">
+## 📞 Support
 
-### ⭐ Star this repository if you find it helpful!
+For questions, issues, or suggestions:
 
-**Made with ❤️ for modern warehouse management**
-
-[![GitHub Stars](https://img.shields.io/github/stars/Mehdi007bond/Projet_Digital_twin_WMS?style=social)](https://github.com/Mehdi007bond/Projet_Digital_twin_WMS/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/Mehdi007bond/Projet_Digital_twin_WMS?style=social)](https://github.com/Mehdi007bond/Projet_Digital_twin_WMS/network/members)
+1. **GitHub Issues**: [Report a bug or request a feature](../../issues)
+2. **Documentation**: Check the `/docs` folder for detailed guides
+3. **Supabase Issues**: For database/realtime issues, consult [Supabase Docs](https://supabase.com/docs)
 
 ---
 
-[⬆ Back to Top](#-digital-twin-for-warehouse-management-system)
+## 🌟 Acknowledgments
 
-</div>
+- **Three.js Community** for excellent 3D visualization tools
+- **Supabase Team** for the powerful serverless platform
+- **INSA Faculty** for project guidance and support
+- **Open Source Community** for inspiration and best practices
+
+---
+
+## 📈 Project Status
+
+- ✅ Core 3D Visualization
+- ✅ Supabase Integration
+- ✅ Real-time Synchronization
+- ✅ Stock Management
+- ✅ AGV Fleet System
+- ✅ KPI Dashboard
+- ✅ 2D Warehouse View
+- 🚧 Advanced Analytics (in progress)
+- 🚧 Mobile Responsiveness (in progress)
+- ⏳ User Authentication (planned)
+- ⏳ Historical Data Archive (planned)
+
+---
+
+**Built with ❤️ by INSA Students**
+
+Last Updated: December 2024
